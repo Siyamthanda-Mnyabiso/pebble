@@ -1,26 +1,166 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Pebble design tokens. Source of truth: the "Pebble" Figma file
+ * (Primitives, Color, Spacing and Radius variable collections).
+ * Monochrome by design: charcoal does the work, ocean blue is a rare accent.
+ */
+@theme {
+  /* Primitives */
+  --color-charcoal-900: #14181f;
+  --color-charcoal-700: #2b313b;
+  --color-charcoal-500: #5b6470;
+  --color-charcoal-400: #8a929c;
+  --color-charcoal-300: #c4c9cf;
+  --color-charcoal-200: #e3e6e9;
+  --color-charcoal-100: #f0f2f4;
+  --color-sand-50: #faf8f5;
+  --color-sand-100: #f3efe9;
+  --color-ocean-500: #0e73b5;
+  --color-ocean-100: #dceef9;
+  --color-success-500: #2e8b57;
+  --color-success-100: #e2f3ea;
+  --color-danger-500: #c8442f;
+  --color-danger-100: #fbe9e5;
+
+  /* Semantic colors (Color collection) */
+  --color-page: #ffffff;
+  --color-warm: var(--color-sand-50);
+  --color-sand: var(--color-sand-100);
+  --color-subtle: var(--color-charcoal-100);
+  --color-dark: var(--color-charcoal-900);
+  --color-ink: var(--color-charcoal-900);
+  --color-muted: var(--color-charcoal-500);
+  --color-faint: var(--color-charcoal-400);
+  --color-on-dark: #ffffff;
+  --color-line: var(--color-charcoal-200);
+  --color-line-strong: var(--color-charcoal-900);
+  --color-hover: var(--color-charcoal-700);
+  --color-pressed: var(--color-charcoal-500);
+  --color-disabled: var(--color-charcoal-300);
+  --color-success: var(--color-success-500);
+  --color-success-soft: var(--color-success-100);
+  --color-danger: var(--color-danger-500);
+  --color-danger-soft: var(--color-danger-100);
+  --color-info: var(--color-ocean-500);
+  --color-info-soft: var(--color-ocean-100);
+
+  /* Radius (Radius collection) */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  /* Elevation (effect styles) */
+  --shadow-card: 0 6px 24px rgb(20 23 31 / 0.09);
+  --shadow-raised: 0 12px 32px rgb(20 23 31 / 0.14);
+  --shadow-float: 0 2px 8px rgb(20 23 31 / 0.1);
+
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/*
+ * Type scale (Figma text styles). Display and H1 step down on small screens,
+ * matching the Mobile/Display and Mobile/H1 styles.
+ */
+@utility type-display {
+  font-size: 42px;
+  line-height: 44px;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  @media (min-width: 1024px) {
+    font-size: 72px;
+    line-height: 72px;
+    letter-spacing: -2.5px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@utility type-stat {
+  font-size: 40px;
+  line-height: 44px;
+  font-weight: 800;
+  letter-spacing: -1.2px;
+  @media (min-width: 1024px) {
+    font-size: 56px;
+    line-height: 58px;
+    letter-spacing: -1.8px;
+  }
+}
+
+@utility type-h1 {
+  font-size: 32px;
+  line-height: 36px;
+  font-weight: 800;
+  letter-spacing: -0.9px;
+  @media (min-width: 1024px) {
+    font-size: 40px;
+    line-height: 44px;
+    letter-spacing: -1.2px;
+  }
+}
+
+@utility type-h2 {
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 800;
+  letter-spacing: -0.7px;
+}
+
+@utility type-h3 {
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+@utility type-h4 {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 700;
+  letter-spacing: -0.1px;
+}
+
+@utility type-body-l {
+  font-size: 18px;
+  line-height: 28px;
+}
+
+@utility type-body {
+  font-size: 16px;
+  line-height: 24px;
+}
+
+@utility type-body-s {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+@utility type-label {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+@utility type-caption {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background: var(--color-page);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 3px;
+  }
 }
