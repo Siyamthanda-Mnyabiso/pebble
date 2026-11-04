@@ -6,13 +6,13 @@ import { AuthActions } from '@/components/layout/site-nav';
 export function ExploreHeader({ q, area }: { q?: string; area: string }) {
   return (
     <header className="bg-page relative">
-      <div className="mx-auto flex h-[72px] max-w-[1440px] items-center gap-4 px-4 md:px-8 lg:h-[88px] lg:gap-8 lg:px-16">
+      <div className="mx-auto flex max-w-[1440px] flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 md:px-8 lg:h-[88px] lg:flex-nowrap lg:gap-8 lg:px-16 lg:py-0">
         <Logo />
 
         <form
           action="/explore"
           role="search"
-          className="bg-page shadow-card flex h-12 min-w-0 flex-1 items-center gap-3 rounded-full pr-3 pl-5 lg:max-w-[460px] lg:flex-none lg:basis-[460px]"
+          className="bg-page shadow-card order-last flex h-12 min-w-0 basis-full items-center gap-3 rounded-full pr-3 pl-5 lg:order-none lg:max-w-[460px] lg:flex-none lg:basis-[460px]"
         >
           <Icon name="search" size={20} />
           <label className="min-w-0 flex-1">

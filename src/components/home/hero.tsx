@@ -49,7 +49,7 @@ function SearchBar() {
           name="q"
           type="search"
           placeholder="What do you need help with?"
-          className="type-body placeholder:text-faint w-full bg-transparent outline-none"
+          className="type-body-s sm:type-body placeholder:text-faint w-full bg-transparent outline-none"
         />
       </label>
       <span className="bg-line hidden h-8 w-px sm:block" aria-hidden="true" />

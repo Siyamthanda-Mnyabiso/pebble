@@ -160,7 +160,7 @@ export function ProviderProfile({
                 <p className="type-caption text-muted mt-1">{service.detail}</p>
               </div>
               <div className="flex items-center gap-4">
-                <p className="type-body-s font-semibold">
+                <p className="type-body-s font-semibold whitespace-nowrap">
                   From R{rand.format(service.fromPrice)}
                 </p>
                 <ArrowBadge size={40} />

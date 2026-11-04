@@ -16,7 +16,7 @@ export function SectionHeader({
 }) {
   return (
     <div className="flex items-end justify-between gap-6">
-      <div>
+      <div className="min-w-0">
         <h2 id={id} className="type-h2">
           {title}
         </h2>
@@ -25,7 +25,7 @@ export function SectionHeader({
       {linkLabel && href ? (
         <Link
           href={href}
-          className="type-body-s inline-flex items-center gap-2 font-semibold"
+          className="type-body-s inline-flex shrink-0 items-center gap-2 py-3 font-semibold whitespace-nowrap"
         >
           {linkLabel}
           <Icon name="skip" size={16} />

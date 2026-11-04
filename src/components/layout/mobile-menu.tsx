@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Icon } from '@/components/icons';
+import { signOut } from '@/app/(auth)/actions';
 import { ButtonLink } from '@/components/ui/button';
 
 export function MobileMenu({
@@ -46,25 +47,53 @@ export function MobileMenu({
               </Link>
             ))}
           </nav>
-          <div className="mt-5 flex gap-3">
-            {signedIn ? (
-              <ButtonLink
-                href={isProvider ? '/dashboard' : '/account/bookings'}
-                className="flex-1"
-              >
-                {isProvider ? 'Dashboard' : 'Your bookings'}
+          {signedIn ? (
+            <>
+              <nav aria-label="Account" className="flex flex-col">
+                {[
+                  isProvider
+                    ? { label: 'Dashboard', href: '/dashboard' }
+                    : { label: 'Your bookings', href: '/account/bookings' },
+                  {
+                    label: 'Notifications',
+                    href: isProvider
+                      ? '/dashboard/notifications'
+                      : '/account/notifications',
+                  },
+                  {
+                    label: 'Settings',
+                    href: isProvider ? '/dashboard/settings' : '/account/settings',
+                  },
+                ].map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setOpen(false)}
+                    className="type-h4 border-line border-b py-4"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+              <form action={signOut} className="mt-5">
+                <button
+                  type="submit"
+                  className="border-line-strong hover:bg-subtle type-label h-12 w-full rounded-full border-[1.5px] font-semibold"
+                >
+                  Sign out
+                </button>
+              </form>
+            </>
+          ) : (
+            <div className="mt-5 flex gap-3">
+              <ButtonLink href="/sign-in" variant="secondary" className="flex-1">
+                Log in
               </ButtonLink>
-            ) : (
-              <>
-                <ButtonLink href="/sign-in" variant="secondary" className="flex-1">
-                  Log in
-                </ButtonLink>
-                <ButtonLink href="/sign-up" className="flex-1">
-                  Sign up
-                </ButtonLink>
-              </>
-            )}
-          </div>
+              <ButtonLink href="/sign-up" className="flex-1">
+                Sign up
+              </ButtonLink>
+            </div>
+          )}
         </div>
       ) : null}
     </div>
