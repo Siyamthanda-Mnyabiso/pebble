@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteNav } from '@/components/layout/site-nav';
 import { ProviderProfile } from '@/components/provider/provider-profile';
@@ -22,16 +23,22 @@ export async function generateMetadata({
   };
 }
 
-export default async function ProviderPage({ params }: PageProps<'/providers/[slug]'>) {
+export default function ProviderPage({ params }: PageProps<'/providers/[slug]'>) {
+  return (
+    <>
+      <SiteNav />
+      <Suspense fallback={<div className="min-h-[900px]" aria-hidden="true" />}>
+        <Profile params={params} />
+      </Suspense>
+      <SiteFooter />
+    </>
+  );
+}
+
+async function Profile({ params }: Pick<PageProps<'/providers/[slug]'>, 'params'>) {
   const { slug } = await params;
   const provider = await getProvider(slug);
   if (!provider) notFound();
 
-  return (
-    <>
-      <SiteNav />
-      <ProviderProfile provider={provider} />
-      <SiteFooter />
-    </>
-  );
+  return <ProviderProfile provider={provider} />;
 }

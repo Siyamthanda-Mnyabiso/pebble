@@ -22,6 +22,8 @@ export type ProviderReview = {
 };
 
 export type AvailabilityDay = {
+  /** ISO date, e.g. 2026-11-06. */
+  iso: string;
   day: string;
   date: number;
   /** Open booking slots; 0 means the provider is off. */
@@ -51,13 +53,13 @@ export type Provider = {
 };
 
 const week: AvailabilityDay[] = [
-  { day: 'Mon', date: 3, slots: 6 },
-  { day: 'Tue', date: 4, slots: 6 },
-  { day: 'Wed', date: 5, slots: 6 },
-  { day: 'Thu', date: 6, slots: 6 },
-  { day: 'Fri', date: 7, slots: 6 },
-  { day: 'Sat', date: 8, slots: 2 },
-  { day: 'Sun', date: 9, slots: 0 },
+  { iso: '2026-11-05', day: 'Thu', date: 5, slots: 6 },
+  { iso: '2026-11-06', day: 'Fri', date: 6, slots: 6 },
+  { iso: '2026-11-07', day: 'Sat', date: 7, slots: 2 },
+  { iso: '2026-11-08', day: 'Sun', date: 8, slots: 0 },
+  { iso: '2026-11-09', day: 'Mon', date: 9, slots: 6 },
+  { iso: '2026-11-10', day: 'Tue', date: 10, slots: 6 },
+  { iso: '2026-11-11', day: 'Wed', date: 11, slots: 6 },
 ];
 
 const cleaningWork = [
