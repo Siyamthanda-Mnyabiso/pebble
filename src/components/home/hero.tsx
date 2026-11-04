@@ -1,47 +1,13 @@
-import Image from 'next/image';
 import { LocationPicker } from '@/components/location/location-picker';
 import { Icon } from '@/components/icons';
 import { ArrowButton } from '@/components/ui/button';
-
-/** The hero photo is cropped to the Pebble "blob" (path from the Figma design). */
-function HeroPhoto() {
-  return (
-    <div className="relative mx-auto aspect-[552/520] w-full max-w-[480px] lg:mx-0 lg:ml-auto">
-      <svg width="0" height="0" aria-hidden="true" className="absolute">
-        <defs>
-          <clipPath id="hero-blob" clipPathUnits="objectBoundingBox">
-            <path
-              transform="scale(0.0018102 0.0019223)"
-              d="M300 0.24C450 -5.76 560 100.24 552 260.24C546 420.24 440 520.24 290 520.24C170 520.24 90 470.24 0 440.24C40 330.24 -10 190.24 70 90.24C130 20.24 210 4.24 300 0.24Z"
-            />
-          </clipPath>
-        </defs>
-      </svg>
-      <Image
-        src="/images/hero-woman.jpg"
-        alt="A smiling provider enjoying the afternoon sun"
-        fill
-        priority
-        sizes="(min-width: 1024px) 600px, 100vw"
-        className="object-cover"
-        style={{ clipPath: 'url(#hero-blob)' }}
-      />
-      <Icon
-        name="sparkles"
-        size={64}
-        className="text-ink absolute top-2 left-0 lg:top-8"
-        aria-hidden="true"
-      />
-    </div>
-  );
-}
 
 function SearchBar() {
   return (
     <form
       action="/explore"
       role="search"
-      className="bg-page shadow-card flex h-14 w-full max-w-[560px] items-center gap-3 rounded-full py-0 pr-2 pl-5"
+      className="bg-page shadow-card flex h-14 w-full max-w-[760px] items-center gap-3 rounded-full py-0 pr-2 pl-5 lg:h-[72px] lg:pr-2.5 lg:pl-6"
     >
       <Icon name="search" size={22} />
       <label className="min-w-0 flex-1">
@@ -62,20 +28,17 @@ function SearchBar() {
 
 export function Hero() {
   return (
-    <section className="mx-auto max-w-[1440px] px-4 py-4 md:px-8 lg:px-16">
-      <div className="grid items-center gap-6 lg:grid-cols-[1fr_1fr] lg:gap-8">
-        <div className="flex flex-col gap-4 lg:py-10">
-          <h1 className="type-display max-w-[440px] lg:max-w-[520px]">
-            Get it done, without the hassle.
-          </h1>
-          <p className="type-body-l text-muted max-w-[380px]">
-            Find trusted people for home, lifestyle and everyday services.
-          </p>
-          <div className="lg:pt-2">
-            <SearchBar />
-          </div>
+    <section className="mx-auto max-w-[1440px] px-4 pt-8 pb-6 md:px-8 lg:px-16 lg:pt-[72px] lg:pb-12">
+      <div className="flex flex-col items-center gap-4 text-center lg:gap-5">
+        <h1 className="max-w-[900px] text-[34px] leading-[38px] font-extrabold tracking-[-1px] lg:text-[64px] lg:leading-[68px] lg:tracking-[-2px]">
+          Get it done, without the hassle.
+        </h1>
+        <p className="type-body-l text-muted max-w-[700px]">
+          Find trusted people for home, lifestyle and everyday services.
+        </p>
+        <div className="flex w-full justify-center pt-2">
+          <SearchBar />
         </div>
-        <HeroPhoto />
       </div>
     </section>
   );
