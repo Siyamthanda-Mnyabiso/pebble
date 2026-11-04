@@ -1,14 +1,14 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { SaveButton } from '@/components/account/save-button';
-import { Icon, type IconName } from '@/components/icons';
+import { Icon } from '@/components/icons';
 import { ArrowBadge, ButtonLink } from '@/components/ui/button';
 import type { Provider } from '@/data/providers';
 import { AvailabilityPicker } from './availability-picker';
+import { ServicePicker } from './service-picker';
 import { ShareButton } from './share-button';
 
 const rand = new Intl.NumberFormat('en-ZA');
-const serviceIcons: IconName[] = ['home', 'sparkles', 'box'];
 
 const tabs = [
   { id: 'overview', label: 'Overview' },
@@ -107,33 +107,7 @@ export function ProviderProfile({
           </p>
           <p className="type-body mt-5 max-w-[560px]">{provider.about}</p>
 
-          <ul className="mt-6 grid grid-cols-3 gap-3">
-            {provider.services.slice(0, 3).map((service, index) => (
-              <li key={service.name}>
-                <Link
-                  href={`/book/${provider.slug}?service=${encodeURIComponent(service.name)}`}
-                  className={
-                    index === 0
-                      ? 'bg-dark text-on-dark hover:bg-hover flex h-full flex-col items-center gap-3 rounded-lg px-3 py-5 text-center transition-colors'
-                      : 'bg-page shadow-card hover:bg-subtle flex h-full flex-col items-center gap-3 rounded-lg px-3 py-5 text-center transition-colors'
-                  }
-                >
-                  <Icon name={serviceIcons[index] ?? 'home'} size={26} />
-                  <span className="type-caption font-semibold">{service.name}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-4 flex items-center gap-3">
-            <ButtonLink
-              href={`/book/${provider.slug}`}
-              size="lg"
-              className="flex-1 justify-between pr-5"
-            >
-              Book now
-              <Icon name="skip" size={20} />
-            </ButtonLink>
+          <ServicePicker slug={provider.slug} services={provider.services}>
             <SaveButton
               slug={provider.slug}
               name={provider.name}
@@ -142,7 +116,7 @@ export function ProviderProfile({
               className="shadow-card size-[52px]"
             />
             <ShareButton name={provider.name} />
-          </div>
+          </ServicePicker>
         </div>
       </section>
 
