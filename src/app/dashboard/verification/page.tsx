@@ -9,9 +9,10 @@ import {
   DocumentUploader,
   RemoveDocument,
   SubmitButton,
-  VideoForm,
+  VideoUploader,
 } from '@/components/verification/provider-forms';
 import { requireProvider } from '@/lib/dashboard';
+import { createClient } from '@/lib/supabase/server';
 import {
   DOC_KINDS,
   EVENT_LABEL,
@@ -80,6 +81,17 @@ async function Content() {
     provider.slug,
   );
   if (!verification) return <NotLinked />;
+  const supabase = await createClient();
+  const videoUrl = verification.video_path
+    ? ((
+        await supabase.storage
+          .from('provider-videos')
+          .createSignedUrl(verification.video_path, 3600)
+      ).data?.signedUrl ?? null)
+    : null;
+  const replacementPending =
+    verification.video_path !== '' &&
+    verification.video_path !== verification.approved_video_path;
 
   const status = verification.status;
   const meta = STATUS_META[status];
@@ -168,11 +180,13 @@ async function Content() {
                 ) : null}
               </Item>
             ))}
-            <Item
-              done={!missing.has('Add a link to your intro video')}
-              title="Intro video"
-            >
-              <VideoForm current={verification.intro_video_url} locked={!editable} />
+            <Item done={!missing.has('Upload your intro video')} title="Intro video">
+              <VideoUploader
+                slug={provider.slug}
+                currentUrl={videoUrl}
+                pendingReplacement={false}
+                locked={!editable}
+              />
             </Item>
             <Item done={!missing.has('Upload a copy of your ID')} title={DOC_KINDS.id}>
               <DocList items={docs('id')} locked={!editable} />
@@ -219,6 +233,22 @@ async function Content() {
           <p className="type-caption text-muted mt-4">
             Documents are private. Only the Pebble team can see them.
           </p>
+        </section>
+      ) : null}
+
+      {status === 'approved' ? (
+        <section className="mt-10">
+          <h2 className="type-h2">Intro video</h2>
+          <p className="type-body-s text-muted mt-1 mb-4">
+            Customers see this on your profile. A replacement is checked by the Pebble
+            team before it goes live.
+          </p>
+          <VideoUploader
+            slug={provider.slug}
+            currentUrl={videoUrl}
+            pendingReplacement={replacementPending}
+            locked={false}
+          />
         </section>
       ) : null}
 

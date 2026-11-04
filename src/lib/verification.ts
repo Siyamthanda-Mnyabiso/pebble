@@ -13,7 +13,8 @@ export type Verification = {
   provider_slug: string;
   status: VerificationStatus;
   note: string;
-  intro_video_url: string;
+  video_path: string;
+  approved_video_path: string;
   submitted_at: string | null;
   approved_at: string | null;
   approved_by: string | null;
@@ -118,6 +119,9 @@ export const EVENT_LABEL: Record<string, string> = {
   rejected: 'Rejected',
   suspended: 'Suspended',
   reinstated: 'Reinstated',
+  video_replaced: 'Intro video replaced',
+  video_approved: 'New intro video approved',
+  video_rejected: 'New intro video not accepted',
 };
 
 export async function loadVerification(slug: string) {

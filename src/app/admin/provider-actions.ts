@@ -92,3 +92,26 @@ export async function setCheck(
   revalidatePath(`/admin/providers/${slug}`);
   return { ok: true };
 }
+
+/** Starts a ten minute, logged preview of one document. Returns where to load it from. */
+export async function openDocument(
+  docId: string,
+): Promise<{ ok: true; url: string; expiresAt: number } | { ok: false; error: string }> {
+  await requireAdmin('/admin/providers');
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('admin_open_document', { p_doc: docId });
+  if (error || !data) return { ok: false, error: 'This document could not be opened.' };
+  return {
+    ok: true,
+    url: `/admin/documents/${data as string}`,
+    expiresAt: Date.now() + 10 * 60 * 1000,
+  };
+}
+
+export async function approveReplacementVideo(slug: string) {
+  return decide(slug, 'admin_approve_video', {}, 'approved', '');
+}
+
+export async function rejectReplacementVideo(slug: string, note: string) {
+  return decide(slug, 'admin_reject_video', { p_note: note }, 'changes_requested', note);
+}

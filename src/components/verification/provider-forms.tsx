@@ -1,53 +1,134 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useActionState, useRef, useState, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import {
-  saveIntroVideo,
   submitForReview,
   type VerificationState,
 } from '@/app/dashboard/verification/actions';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 
-const initial: VerificationState = {};
 const MAX_DOC = 10 * 1024 * 1024;
 const TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 
-export function VideoForm({ current, locked }: { current: string; locked: boolean }) {
-  const [state, action, pending] = useActionState(saveIntroVideo, initial);
+const MAX_VIDEO = 50 * 1024 * 1024;
+const VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm'];
+
+/** Uploads the intro video straight to Pebble. Record it on any phone or camera first. */
+export function VideoUploader({
+  slug,
+  currentUrl,
+  pendingReplacement,
+  locked,
+}: {
+  slug: string;
+  /** A short-lived link to the video on file, if any. */
+  currentUrl: string | null;
+  /** The video on file is a replacement that has not been approved yet. */
+  pendingReplacement: boolean;
+  locked: boolean;
+}) {
+  const router = useRouter();
+  const input = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function upload(file: File | undefined) {
+    if (!file) return;
+    setError('');
+    if (!VIDEO_TYPES.includes(file.type))
+      return setError('Use an MP4, MOV or WebM video.');
+    if (file.size > MAX_VIDEO) {
+      return setError(
+        'That video is over 50 MB. Record it at 720p or 1080p, or trim it, and try again.',
+      );
+    }
+    setBusy(true);
+    const supabase = createClient();
+    const ext =
+      file.type === 'video/quicktime'
+        ? 'mov'
+        : file.type === 'video/webm'
+          ? 'webm'
+          : 'mp4';
+    const path = `${slug}/${crypto.randomUUID()}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from('provider-videos')
+      .upload(path, file, { contentType: file.type });
+    if (uploadError) {
+      setBusy(false);
+      return setError('The upload failed. Check your connection and try again.');
+    }
+    const { error: rowError } = await supabase
+      .from('provider_verification')
+      .update({ video_path: path })
+      .eq('provider_slug', slug);
+    setBusy(false);
+    if (rowError) {
+      await supabase.storage.from('provider-videos').remove([path]);
+      return setError(
+        'The video could not be saved. You cannot change it while we review.',
+      );
+    }
+    if (input.current) input.current.value = '';
+    router.refresh();
+  }
+
   return (
-    <form action={action} className="flex max-w-[560px] flex-col gap-3">
-      <label className="block">
-        <span className="type-body-s mb-2 block font-semibold">Intro video link</span>
-        <input
-          name="video"
-          type="url"
-          defaultValue={current}
-          disabled={locked}
-          placeholder="https://youtu.be/..."
-          className="border-line-strong bg-page type-body-s h-12 w-full rounded-md border px-4 disabled:opacity-60"
+    <div className="flex max-w-[560px] flex-col gap-3">
+      {currentUrl ? (
+        <video
+          src={currentUrl}
+          controls
+          playsInline
+          preload="metadata"
+          className="aspect-video w-full rounded-lg bg-black"
         />
-        <span className="type-caption text-muted mt-1 block">
-          A short video (under 2 minutes) of you introducing your business. Upload it to
-          YouTube, Vimeo or Google Drive and paste the link. Set it to unlisted, not
-          private.
-        </span>
-      </label>
-      {state.error ? (
-        <p role="alert" className="type-body-s text-danger">
-          {state.error}
+      ) : null}
+      {pendingReplacement ? (
+        <p className="type-body-s bg-subtle rounded-lg px-4 py-3">
+          Your new video is waiting for review. Customers still see your previous video
+          until it is approved.
         </p>
       ) : null}
-      {state.saved ? <p className="type-body-s">Saved.</p> : null}
       {!locked ? (
-        <div>
-          <Button type="submit" variant="secondary" disabled={pending}>
-            {pending ? 'Saving…' : 'Save link'}
-          </Button>
-        </div>
+        <>
+          <input
+            ref={input}
+            type="file"
+            accept="video/mp4,video/quicktime,video/webm"
+            className="sr-only"
+            aria-label="Upload intro video"
+            onChange={(e) => void upload(e.target.files?.[0])}
+          />
+          <div>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={busy}
+              onClick={() => input.current?.click()}
+            >
+              {busy
+                ? 'Uploading… please wait'
+                : currentUrl
+                  ? 'Replace video'
+                  : 'Upload video'}
+            </Button>
+          </div>
+          <p className="type-caption text-muted">
+            A short video (about a minute) introducing yourself and your business. Record
+            it on any phone or camera, then upload it here. MP4, MOV or WebM, up to 50 MB.
+            Customers will watch it before booking you.
+          </p>
+        </>
       ) : null}
-    </form>
+      {error ? (
+        <p role="alert" className="type-body-s text-danger">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }
 

@@ -1,10 +1,14 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { StatusBadge } from '@/components/verification/status';
 import { DecisionPanel, VettingChecklist } from '@/components/verification/admin-panels';
+import {
+  DocumentPreview,
+  PortfolioGallery,
+  VideoReplacementPanel,
+} from '@/components/verification/media-review';
 import { Icon } from '@/components/icons';
 import { categoryLabel } from '@/data/providers';
 import { requireAdmin } from '@/lib/admin';
@@ -98,13 +102,22 @@ async function Content({
   const uploaded = [...new Set([...row.gallery, ...row.work])].filter(
     (u) => !u.startsWith('/images/'),
   );
-  const signed = documents.length
-    ? await supabase.storage.from('provider-docs').createSignedUrls(
-        documents.map((d) => d.path),
-        600,
-      )
-    : { data: [] };
-  const urls = new Map((signed.data ?? []).map((s) => [s.path, s.signedUrl]));
+  const signVideo = async (path: string) =>
+    path
+      ? ((await supabase.storage.from('provider-videos').createSignedUrl(path, 3600)).data
+          ?.signedUrl ?? null)
+      : null;
+  const [candidateUrl, liveUrl] = await Promise.all([
+    signVideo(verification.video_path),
+    verification.approved_video_path &&
+    verification.approved_video_path !== verification.video_path
+      ? signVideo(verification.approved_video_path)
+      : Promise.resolve(null),
+  ]);
+  const replacement =
+    verification.status === 'approved' &&
+    verification.video_path !== '' &&
+    verification.video_path !== verification.approved_video_path;
   const locked = verification.status !== 'pending_review';
   const all = [...blockers.provider, ...blockers.admin];
 
@@ -194,34 +207,42 @@ async function Content({
       </Section>
 
       <Section title="Intro video">
-        {verification.intro_video_url ? (
-          <a
-            href={verification.intro_video_url}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="type-body-s break-all underline"
-          >
-            {verification.intro_video_url}
-          </a>
+        {candidateUrl ? (
+          <video
+            src={candidateUrl}
+            controls
+            controlsList="nodownload"
+            playsInline
+            preload="metadata"
+            className="aspect-video w-full max-w-[640px] rounded-lg bg-black"
+          />
         ) : (
-          <p className="type-body-s text-muted">No video submitted.</p>
+          <p className="type-body-s text-muted">No video uploaded.</p>
         )}
+        {replacement ? (
+          <>
+            {liveUrl ? (
+              <div className="mt-4">
+                <p className="type-body-s text-muted mb-2">Current public video</p>
+                <video
+                  src={liveUrl}
+                  controls
+                  playsInline
+                  preload="none"
+                  className="aspect-video w-full max-w-[420px] rounded-lg bg-black"
+                />
+              </div>
+            ) : null}
+            <VideoReplacementPanel slug={slug} />
+          </>
+        ) : null}
       </Section>
 
       <Section title={`Portfolio (${uploaded.length} uploaded)`}>
         {uploaded.length === 0 ? (
           <p className="type-body-s text-muted">No uploaded photos.</p>
         ) : (
-          <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {uploaded.map((src) => (
-              <li
-                key={src}
-                className="bg-subtle relative aspect-[4/3] overflow-hidden rounded-md"
-              >
-                <Image src={src} alt="" fill sizes="260px" className="object-cover" />
-              </li>
-            ))}
-          </ul>
+          <PortfolioGallery photos={uploaded} name={row.name} />
         )}
       </Section>
 
@@ -229,28 +250,13 @@ async function Content({
         {documents.length === 0 ? (
           <p className="type-body-s text-muted">No documents uploaded.</p>
         ) : (
-          <ul className="type-body-s flex flex-col gap-2">
-            {documents.map((d) => (
-              <li key={d.id}>
-                <span className="text-muted">{DOC_KINDS[d.kind]}: </span>
-                {urls.get(d.path) ? (
-                  <a
-                    href={urls.get(d.path) ?? undefined}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="underline"
-                  >
-                    {d.label}
-                  </a>
-                ) : (
-                  d.label
-                )}
-              </li>
-            ))}
-          </ul>
+          <DocumentPreview
+            docs={documents.map((d) => ({ ...d, kindLabel: DOC_KINDS[d.kind] }))}
+          />
         )}
         <p className="type-caption text-muted mt-3">
-          Links expire after 10 minutes. Reload to get fresh ones.
+          Documents are private. Each preview lasts 10 minutes, can be refreshed, and is
+          logged.
         </p>
       </Section>
 

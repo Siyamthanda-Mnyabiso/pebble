@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { SaveButton } from '@/components/account/save-button';
 import { Icon } from '@/components/icons';
 import type { Provider } from '@/data/providers';
+import { Suspense } from 'react';
+import { IntroVideo } from './intro-video';
 import { PhotoGallery } from './photo-gallery';
 import { AvailabilityPicker } from './availability-picker';
 import { BookingCard } from './service-picker';
@@ -112,6 +114,9 @@ export function ProviderProfile({
         </aside>
 
         <div className="min-w-0 lg:col-start-1 lg:row-start-1">
+          <Suspense>
+            <IntroVideo slug={provider.slug} name={provider.name} />
+          </Suspense>
           <section id="overview" className="scroll-mt-24">
             <p className="type-body max-w-[640px]">{provider.about}</p>
             <p className="type-body-s text-muted mt-3">{provider.replyTime}</p>
