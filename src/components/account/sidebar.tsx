@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 import { signOut } from '@/app/(auth)/actions';
 import { Logo } from '@/components/brand/logo';
 import { Icon, type IconName } from '@/components/icons';
@@ -32,11 +33,32 @@ export function AccountSidebar({
   label?: string;
 }) {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const isActive = (href: string) =>
+    href === '/dashboard' ? pathname === href : pathname.startsWith(href);
+  const current = items.find((item) => isActive(item.href));
 
   return (
-    <aside className="border-line md:sticky md:top-0 md:h-dvh md:w-[280px] md:shrink-0 md:border-r">
+    <aside className="border-line relative md:sticky md:top-0 md:h-dvh md:w-[280px] md:shrink-0 md:border-r">
       <div className="flex flex-col gap-4 px-4 pt-5 pb-3 md:gap-8 md:px-6 md:pt-6">
-        <Logo />
+        <div className="flex h-11 items-center justify-between gap-3 md:block md:h-auto">
+          <Logo />
+          <div className="flex min-w-0 items-center gap-3 md:hidden">
+            {current ? (
+              <span className="type-body-s truncate font-semibold">{current.label}</span>
+            ) : null}
+            <button
+              type="button"
+              aria-expanded={open}
+              aria-controls="account-menu"
+              aria-label={open ? 'Close menu' : 'Open menu'}
+              onClick={() => setOpen((value) => !value)}
+              className="bg-subtle inline-flex size-11 shrink-0 items-center justify-center rounded-full"
+            >
+              <Icon name={open ? 'close' : 'menu'} size={22} />
+            </button>
+          </div>
+        </div>
         <div className="hidden items-center gap-3 md:flex">
           <span className="bg-dark text-on-dark type-label inline-flex size-11 items-center justify-center rounded-full">
             {initials(name)}
@@ -46,48 +68,52 @@ export function AccountSidebar({
             <p className="type-caption text-muted capitalize">{role}</p>
           </div>
         </div>
-        <nav
-          aria-label={label}
-          className="-mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-col md:gap-1 md:overflow-visible md:px-0"
+        <div
+          id="account-menu"
+          className={cn(
+            'bg-page shadow-raised border-line absolute inset-x-0 top-full z-20 flex-col gap-4 border-t px-4 pt-3 pb-5 md:static md:z-auto md:flex md:gap-8 md:border-0 md:bg-transparent md:p-0 md:shadow-none',
+            open ? 'flex' : 'hidden',
+          )}
         >
-          {items.map((item) => {
-            const active =
-              item.href === '/dashboard'
-                ? pathname === item.href
-                : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={active ? 'page' : undefined}
-                className={cn(
-                  'type-body-s flex h-12 shrink-0 items-center gap-3 rounded-full px-4 font-semibold whitespace-nowrap transition-colors',
-                  active ? 'bg-dark text-on-dark' : 'hover:bg-subtle',
-                )}
-              >
-                <Icon name={item.icon} size={20} />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="hidden flex-col gap-1 md:flex">
-          <Link
-            href="/help"
-            className="type-body-s hover:bg-subtle flex h-12 items-center gap-3 rounded-full px-4 font-semibold"
-          >
-            <Icon name="info" size={20} />
-            Help and support
-          </Link>
-          <form action={signOut}>
-            <button
-              type="submit"
-              className="type-body-s hover:bg-subtle flex h-12 w-full items-center gap-3 rounded-full px-4 text-left font-semibold"
+          <nav aria-label={label} className="flex flex-col gap-1">
+            {items.map((item) => {
+              const active = isActive(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    'type-body-s flex h-12 shrink-0 items-center gap-3 rounded-full px-4 font-semibold whitespace-nowrap transition-colors',
+                    active ? 'bg-dark text-on-dark' : 'hover:bg-subtle',
+                  )}
+                >
+                  <Icon name={item.icon} size={20} />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+          <div className="border-line mt-1 flex flex-col gap-1 border-t pt-2 md:border-0 md:pt-0">
+            <Link
+              href="/help"
+              onClick={() => setOpen(false)}
+              className="type-body-s hover:bg-subtle flex h-12 items-center gap-3 rounded-full px-4 font-semibold"
             >
-              <Icon name="skipBack" size={20} />
-              Sign out
-            </button>
-          </form>
+              <Icon name="info" size={20} />
+              Help and support
+            </Link>
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="type-body-s hover:bg-subtle flex h-12 w-full items-center gap-3 rounded-full px-4 text-left font-semibold"
+              >
+                <Icon name="skipBack" size={20} />
+                Sign out
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </aside>
