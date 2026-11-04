@@ -109,16 +109,18 @@ export function ProviderProfile({
 
           <ul className="mt-6 grid grid-cols-3 gap-3">
             {provider.services.slice(0, 3).map((service, index) => (
-              <li
-                key={service.name}
-                className={
-                  index === 0
-                    ? 'bg-dark text-on-dark flex flex-col items-center gap-3 rounded-lg px-3 py-5 text-center'
-                    : 'bg-page shadow-card flex flex-col items-center gap-3 rounded-lg px-3 py-5 text-center'
-                }
-              >
-                <Icon name={serviceIcons[index] ?? 'home'} size={26} />
-                <span className="type-caption font-semibold">{service.name}</span>
+              <li key={service.name}>
+                <Link
+                  href={`/book/${provider.slug}?service=${encodeURIComponent(service.name)}`}
+                  className={
+                    index === 0
+                      ? 'bg-dark text-on-dark hover:bg-hover flex h-full flex-col items-center gap-3 rounded-lg px-3 py-5 text-center transition-colors'
+                      : 'bg-page shadow-card hover:bg-subtle flex h-full flex-col items-center gap-3 rounded-lg px-3 py-5 text-center transition-colors'
+                  }
+                >
+                  <Icon name={serviceIcons[index] ?? 'home'} size={26} />
+                  <span className="type-caption font-semibold">{service.name}</span>
+                </Link>
               </li>
             ))}
           </ul>
