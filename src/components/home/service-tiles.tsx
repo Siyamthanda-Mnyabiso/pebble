@@ -20,7 +20,7 @@ export function ServiceTiles() {
         {serviceCategories.map((category) => (
           <li key={category.slug} className="shrink-0 lg:shrink">
             <Link
-              href={`/explore?service=${category.slug}`}
+              href={`/explore?category=${category.slug}`}
               className={cn(
                 'bg-page shadow-card hover:bg-subtle flex h-[108px] w-[128px] flex-col items-center justify-center gap-3 rounded-lg transition-colors lg:w-full',
               )}
