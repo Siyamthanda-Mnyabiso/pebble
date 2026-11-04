@@ -5,7 +5,13 @@ import { useState } from 'react';
 import { Icon } from '@/components/icons';
 import { ButtonLink } from '@/components/ui/button';
 
-export function MobileMenu({ links }: { links: { label: string; href: string }[] }) {
+export function MobileMenu({
+  links,
+  signedIn = false,
+}: {
+  links: { label: string; href: string }[];
+  signedIn?: boolean;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -39,12 +45,20 @@ export function MobileMenu({ links }: { links: { label: string; href: string }[]
             ))}
           </nav>
           <div className="mt-5 flex gap-3">
-            <ButtonLink href="/sign-in" variant="secondary" className="flex-1">
-              Log in
-            </ButtonLink>
-            <ButtonLink href="/sign-up" className="flex-1">
-              Sign up
-            </ButtonLink>
+            {signedIn ? (
+              <ButtonLink href="/account/bookings" className="flex-1">
+                Your bookings
+              </ButtonLink>
+            ) : (
+              <>
+                <ButtonLink href="/sign-in" variant="secondary" className="flex-1">
+                  Log in
+                </ButtonLink>
+                <ButtonLink href="/sign-up" className="flex-1">
+                  Sign up
+                </ButtonLink>
+              </>
+            )}
           </div>
         </div>
       ) : null}

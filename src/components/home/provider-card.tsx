@@ -1,12 +1,19 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Icon } from '@/components/icons';
+import { SaveButton } from '@/components/account/save-button';
 import { ArrowBadge } from '@/components/ui/button';
 import type { ProviderSummary } from '@/data/home';
 
 const rand = new Intl.NumberFormat('en-ZA');
 
-export function ProviderCard({ provider }: { provider: ProviderSummary }) {
+export function ProviderCard({
+  provider,
+  saved = false,
+}: {
+  provider: ProviderSummary;
+  saved?: boolean;
+}) {
   return (
     <article className="bg-page shadow-card relative overflow-hidden rounded-lg">
       <div className="relative h-44">
@@ -17,13 +24,12 @@ export function ProviderCard({ provider }: { provider: ProviderSummary }) {
           sizes="(min-width: 1024px) 310px, (min-width: 640px) 50vw, 100vw"
           className="object-cover"
         />
-        <button
-          type="button"
-          aria-label={`Save ${provider.name}`}
-          className="bg-page shadow-float absolute top-3 right-3 z-10 inline-flex size-10 items-center justify-center rounded-full"
-        >
-          <Icon name="heart" size={20} />
-        </button>
+        <SaveButton
+          slug={provider.slug}
+          name={provider.name}
+          initialSaved={saved}
+          className="absolute top-3 right-3 z-10 size-10"
+        />
       </div>
       <div className="flex flex-col gap-2 p-5">
         <h3 className="type-h4">

@@ -20,3 +20,31 @@ export function formatDay(iso: string, { year = false } = {}) {
   const weekday = days[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
   return `${weekday}, ${d} ${months[m - 1]}${year ? ` ${y}` : ''}`;
 }
+
+/** Today's date in South Africa as YYYY-MM-DD. */
+export function todayInSA() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg' }).format(
+    new Date(),
+  );
+}
+
+const longMonths = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+/** "October 2026" from an ISO timestamp or date. */
+export function formatMonthYear(iso: string) {
+  const d = new Date(iso);
+  return `${longMonths[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}

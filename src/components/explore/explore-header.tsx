@@ -1,9 +1,6 @@
-import Link from 'next/link';
 import { Logo } from '@/components/brand/logo';
 import { Icon } from '@/components/icons';
-import { primaryLinks } from '@/components/layout/site-nav';
-import { MobileMenu } from '@/components/layout/mobile-menu';
-import { ButtonLink } from '@/components/ui/button';
+import { AuthActions } from '@/components/layout/site-nav';
 
 /** Compact header for search pages: the search box lives in the bar itself. */
 export function ExploreHeader({ q, area }: { q?: string; area: string }) {
@@ -38,15 +35,7 @@ export function ExploreHeader({ q, area }: { q?: string; area: string }) {
           <span className="type-body-s font-semibold">{area}</span>
         </div>
 
-        <div className="ml-auto hidden items-center gap-6 lg:flex">
-          <Link href="/sign-in" className="type-body-s hover:text-muted font-semibold">
-            Log in
-          </Link>
-          <ButtonLink href="/sign-up" size="sm">
-            Sign up
-          </ButtonLink>
-        </div>
-        <MobileMenu links={primaryLinks} />
+        <AuthActions />
       </div>
     </header>
   );

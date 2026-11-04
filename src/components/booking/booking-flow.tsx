@@ -2,18 +2,18 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { createBooking } from '@/app/book/[slug]/actions';
 import { Icon, type IconName } from '@/components/icons';
 import { Button, ButtonLink } from '@/components/ui/button';
 import type { Provider } from '@/data/providers';
+import { BOOKING_TIMES, SERVICE_FEE } from '@/lib/booking';
 import { cn } from '@/lib/cn';
 import { formatDay } from '@/lib/dates';
 import { Stepper } from './stepper';
 
-const SERVICE_FEE = 25;
-const TIMES = ['08:00', '10:00', '12:00', '14:00', '16:00'];
+const DRAFT_KEY = 'pebble-booking-draft';
 const rand = new Intl.NumberFormat('en-ZA');
 
 type Draft = {
@@ -79,6 +79,7 @@ function Summary({
 }
 
 export function BookingFlow({ provider }: { provider: Provider }) {
+  const router = useRouter();
   const params = useSearchParams();
   const requested = params.get('service');
   const openDays = provider.availability.filter((d) => d.slots > 0);
@@ -89,7 +90,7 @@ export function BookingFlow({ provider }: { provider: Provider }) {
       provider.services.find((s) => s.name === requested)?.name ??
       provider.services[0].name,
     date: openDays[0]?.iso ?? '',
-    time: TIMES[1],
+    time: BOOKING_TIMES[1],
     address: '',
     notes: '',
   }));
@@ -98,6 +99,22 @@ export function BookingFlow({ provider }: { provider: Provider }) {
   const [reference, setReference] = useState('');
   const [pending, startTransition] = useTransition();
   const heading = useRef<HTMLHeadingElement>(null);
+
+  // Coming back from sign in: restore what they had filled in and go to review.
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(DRAFT_KEY);
+      if (!saved) return;
+      const parsed = JSON.parse(saved) as Draft;
+      if (parsed.address && provider.services.some((s) => s.name === parsed.service)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setDraft(parsed);
+        setStep(2);
+      }
+    } catch {
+      // Storage can be unavailable or hold stale data; start fresh.
+    }
+  }, [provider.services]);
 
   useEffect(() => {
     heading.current?.focus();
@@ -133,7 +150,11 @@ export function BookingFlow({ provider }: { provider: Provider }) {
       });
       if (result.ok) {
         setReference(result.reference);
+        sessionStorage.removeItem(DRAFT_KEY);
         setStep(3);
+      } else if (result.needsSignIn) {
+        sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        router.push(`/sign-in?next=${encodeURIComponent(`/book/${provider.slug}`)}`);
       } else {
         setSubmitError(result.error);
       }
@@ -155,8 +176,8 @@ export function BookingFlow({ provider }: { provider: Provider }) {
             You are booked!
           </h1>
           <p className="type-body-l text-muted mt-5">
-            {provider.name} has been notified and will confirm within the hour. We sent
-            the details to your email.
+            {provider.name} will confirm your booking. You can follow it under Bookings in
+            your account.
           </p>
 
           <div className="bg-page shadow-card mt-8 w-full rounded-xl p-6 text-left">
@@ -193,10 +214,10 @@ export function BookingFlow({ provider }: { provider: Provider }) {
             </ul>
           </div>
 
-          {/* TODO(supabase): remove once bookings are stored and emails are sent. */}
+          {/* Emails are not sent yet. */}
           <p className="type-caption text-muted bg-subtle mt-6 rounded-md px-4 py-3">
-            Preview build: bookings are not saved yet, and no provider or email has been
-            notified.
+            Your booking is saved to your account. Provider notifications and confirmation
+            emails are not switched on yet.
           </p>
 
           <div className="mt-6 flex flex-wrap justify-center gap-3">
@@ -279,7 +300,7 @@ export function BookingFlow({ provider }: { provider: Provider }) {
 
                   <fieldset className="flex flex-wrap gap-3">
                     <legend className="sr-only">Start time</legend>
-                    {TIMES.map((time) => (
+                    {BOOKING_TIMES.map((time) => (
                       <button
                         key={time}
                         type="button"

@@ -6,6 +6,7 @@ import { FilterBar } from '@/components/explore/filter-bar';
 import { ProviderCard } from '@/components/home/provider-card';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { ButtonLink } from '@/components/ui/button';
+import { getSavedSlugs } from '@/lib/auth';
 import { categoryLabel, searchProviders, type ProviderFilters } from '@/data/providers';
 
 export const metadata: Metadata = {
@@ -67,7 +68,10 @@ export default function ExplorePage({ searchParams }: PageProps<'/explore'>) {
 async function Results({ searchParams }: Pick<PageProps<'/explore'>, 'searchParams'>) {
   const raw = await searchParams;
   const filters = parse(raw);
-  const { providers, total } = await searchProviders(filters);
+  const [{ providers, total }, saved] = await Promise.all([
+    searchProviders(filters),
+    getSavedSlugs(),
+  ]);
 
   const label = filters.category ? categoryLabel(filters.category) : undefined;
   const title = label
@@ -105,7 +109,7 @@ async function Results({ searchParams }: Pick<PageProps<'/explore'>, 'searchPara
         <ul className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {providers.map((provider) => (
             <li key={provider.slug}>
-              <ProviderCard provider={provider} />
+              <ProviderCard provider={provider} saved={saved.has(provider.slug)} />
             </li>
           ))}
         </ul>

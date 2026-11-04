@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { SaveButton } from '@/components/account/save-button';
 import { Icon, type IconName } from '@/components/icons';
 import { ArrowBadge, ButtonLink } from '@/components/ui/button';
 import type { Provider } from '@/data/providers';
@@ -29,7 +30,13 @@ function Stars({ value }: { value: number }) {
   );
 }
 
-export function ProviderProfile({ provider }: { provider: Provider }) {
+export function ProviderProfile({
+  provider,
+  saved = false,
+}: {
+  provider: Provider;
+  saved?: boolean;
+}) {
   const thumbs = provider.gallery.slice(1, 4);
   const extra = provider.gallery.length - 4;
 
@@ -124,13 +131,13 @@ export function ProviderProfile({ provider }: { provider: Provider }) {
               Book now
               <Icon name="skip" size={20} />
             </ButtonLink>
-            <button
-              type="button"
-              aria-label={`Save ${provider.name}`}
-              className="bg-page shadow-card inline-flex size-[52px] items-center justify-center rounded-full"
-            >
-              <Icon name="heart" size={22} />
-            </button>
+            <SaveButton
+              slug={provider.slug}
+              name={provider.name}
+              initialSaved={saved}
+              size={22}
+              className="shadow-card size-[52px]"
+            />
             <button
               type="button"
               aria-label="Share"
