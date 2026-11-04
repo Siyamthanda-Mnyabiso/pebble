@@ -1,12 +1,16 @@
 import { Suspense } from 'react';
 import { listFeaturedProviders } from '@/data/providers';
+import { getSavedSlugs } from '@/lib/auth';
 import { getCity } from '@/lib/city';
 import { ProviderCard } from './provider-card';
 import { SectionHeader } from './section-header';
 
 async function Featured() {
   const city = await getCity();
-  const providers = await listFeaturedProviders(city);
+  const [providers, saved] = await Promise.all([
+    listFeaturedProviders(city),
+    getSavedSlugs(),
+  ]);
   return providers.length === 0 ? (
     <p className="type-body text-muted mt-5">
       We have no providers in {city} yet. Pick another city above to see who is available.
@@ -15,7 +19,7 @@ async function Featured() {
     <ul className="mt-5 grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
       {providers.map((provider) => (
         <li key={provider.slug}>
-          <ProviderCard provider={provider} />
+          <ProviderCard provider={provider} saved={saved.has(provider.slug)} />
         </li>
       ))}
     </ul>

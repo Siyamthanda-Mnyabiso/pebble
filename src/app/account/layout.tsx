@@ -28,14 +28,15 @@ async function Frame({ children }: { children: React.ReactNode }) {
       <AccountSidebar
         name={profile?.full_name || user.email || ''}
         role={profile?.role ?? 'customer'}
-        items={
-          profile?.role === 'provider'
-            ? [
-                { href: '/dashboard', label: 'Provider dashboard', icon: 'home' },
-                ...accountNav,
-              ]
-            : accountNav
-        }
+        items={[
+          ...(profile?.is_admin
+            ? [{ href: '/admin', label: 'Admin', icon: 'sparkles' as const }]
+            : []),
+          ...(profile?.role === 'provider'
+            ? [{ href: '/dashboard', label: 'Provider dashboard', icon: 'home' as const }]
+            : []),
+          ...accountNav,
+        ]}
       />
       <main className="min-w-0 flex-1 px-4 pt-6 pb-20 md:px-10 md:pt-14 lg:px-16">
         {children}

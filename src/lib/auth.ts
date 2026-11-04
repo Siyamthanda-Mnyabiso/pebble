@@ -9,6 +9,7 @@ export type Profile = {
   address: string;
   role: 'customer' | 'provider';
   provider_slug: string | null;
+  is_admin: boolean;
   notify_bookings: boolean;
   notify_reminders: boolean;
   notify_offers: boolean;
@@ -34,7 +35,7 @@ export const getProfile = cache(async (userId: string) => {
   const { data } = await supabase
     .from('profiles')
     .select(
-      'full_name, phone, address, role, provider_slug, notify_bookings, notify_reminders, notify_offers, created_at',
+      'full_name, phone, address, role, provider_slug, is_admin, notify_bookings, notify_reminders, notify_offers, created_at',
     )
     .eq('id', userId)
     .single<Profile>();

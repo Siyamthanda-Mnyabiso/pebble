@@ -35,7 +35,9 @@ export function AccountSidebar({
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const isActive = (href: string) =>
-    href === '/dashboard' ? pathname === href : pathname.startsWith(href);
+    href === '/dashboard' || href === '/admin'
+      ? pathname === href
+      : pathname.startsWith(href);
   const current = items.find((item) => isActive(item.href));
 
   return (
