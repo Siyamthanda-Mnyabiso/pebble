@@ -5,7 +5,7 @@ import { ArrowButton } from '@/components/ui/button';
 /** The hero photo is cropped to the Pebble "blob" (path from the Figma design). */
 function HeroPhoto() {
   return (
-    <div className="relative mx-auto aspect-[552/520] w-full max-w-[600px] lg:mx-0 lg:ml-auto">
+    <div className="relative mx-auto aspect-[552/520] w-full max-w-[480px] lg:mx-0 lg:ml-auto">
       <svg width="0" height="0" aria-hidden="true" className="absolute">
         <defs>
           <clipPath id="hero-blob" clipPathUnits="objectBoundingBox">
@@ -40,7 +40,7 @@ function SearchBar() {
     <form
       action="/explore"
       role="search"
-      className="bg-page shadow-card flex h-[72px] w-full max-w-[620px] items-center gap-3.5 rounded-full py-0 pr-2.5 pl-6"
+      className="bg-page shadow-card flex h-14 w-full max-w-[560px] items-center gap-3 rounded-full py-0 pr-2 pl-5"
     >
       <Icon name="search" size={22} />
       <label className="min-w-0 flex-1">
@@ -62,20 +62,20 @@ function SearchBar() {
           className="type-body-s w-24 bg-transparent font-semibold outline-none"
         />
       </label>
-      <ArrowButton size={52} label="Search" type="submit" />
+      <ArrowButton size={40} label="Search" type="submit" />
     </form>
   );
 }
 
 export function Hero() {
   return (
-    <section className="mx-auto max-w-[1440px] px-4 py-6 md:px-8 lg:px-16">
-      <div className="grid items-center gap-10 lg:grid-cols-[680px_1fr] lg:gap-8">
-        <div className="flex flex-col gap-6 lg:py-16">
-          <h1 className="type-display max-w-[420px] lg:max-w-[480px]">
+    <section className="mx-auto max-w-[1440px] px-4 py-4 md:px-8 lg:px-16">
+      <div className="grid items-center gap-6 lg:grid-cols-[1fr_1fr] lg:gap-8">
+        <div className="flex flex-col gap-4 lg:py-10">
+          <h1 className="type-display max-w-[440px] lg:max-w-[520px]">
             Get it done, without the hassle.
           </h1>
-          <p className="type-body-l text-muted max-w-[340px]">
+          <p className="type-body-l text-muted max-w-[380px]">
             Find trusted people for home, lifestyle and everyday services.
           </p>
           <div className="lg:pt-2">

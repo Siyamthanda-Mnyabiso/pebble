@@ -6,7 +6,7 @@ import { SectionHeader } from './section-header';
 export function TrustAndReviews() {
   return (
     <section aria-labelledby="loved" className="bg-subtle">
-      <div className="mx-auto flex max-w-[1440px] flex-col gap-12 px-4 py-16 md:px-8 lg:gap-12 lg:px-16 lg:py-20">
+      <div className="mx-auto flex max-w-[1440px] flex-col gap-12 px-4 py-10 md:px-8 lg:gap-8 lg:px-16 lg:py-14">
         <dl className="grid gap-8 md:grid-cols-3 md:gap-6">
           {trustStats.map((stat) => (
             <div key={stat.label} className="flex flex-col-reverse gap-1">

@@ -55,7 +55,7 @@ export default function ExplorePage({ searchParams }: PageProps<'/explore'>) {
           <ExploreHeader q={first(params.q)} area={area} />
         ))}
       </Suspense>
-      <main className="mx-auto w-full max-w-[1440px] px-4 pt-8 pb-20 md:px-8 lg:px-16">
+      <main className="mx-auto w-full max-w-[1440px] px-4 pt-6 pb-16 md:px-8 lg:px-16">
         <Suspense fallback={<ResultsSkeleton />}>
           <Results searchParams={searchParams} />
         </Suspense>
@@ -95,18 +95,18 @@ async function Results({ searchParams }: Pick<PageProps<'/explore'>, 'searchPara
         </Link>
       </nav>
       <h1 className="type-h1 mt-2 max-w-[640px]">{title}</h1>
-      <p className="type-body-l text-muted mt-3">
+      <p className="type-body-s text-muted mt-1">
         {total} {total === 1 ? 'provider' : 'providers'} available
       </p>
 
-      <div className="mt-8">
+      <div className="mt-5">
         <Suspense>
           <FilterBar total={total} />
         </Suspense>
       </div>
 
       {providers.length > 0 ? (
-        <ul className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-6 grid grid-cols-1 gap-x-5 gap-y-8 min-[1500px]:grid-cols-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {providers.map((provider) => (
             <li key={provider.slug}>
               <ProviderCard provider={provider} saved={saved.has(provider.slug)} />
@@ -150,9 +150,9 @@ function ResultsSkeleton() {
     <div aria-hidden="true">
       <div className="bg-subtle h-4 w-16 rounded-full" />
       <div className="bg-subtle mt-4 h-24 w-full max-w-[560px] rounded-lg" />
-      <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }, (_, i) => (
-          <div key={i} className="bg-subtle h-[300px] rounded-lg" />
+      <div className="mt-10 grid grid-cols-1 gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {Array.from({ length: 8 }, (_, i) => (
+          <div key={i} className="bg-subtle aspect-[4/3] rounded-lg" />
         ))}
       </div>
     </div>

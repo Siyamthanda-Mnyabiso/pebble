@@ -16,9 +16,9 @@ export const buttonStyles = cva(
         ghost: 'text-ink hover:bg-subtle',
       },
       size: {
-        sm: 'h-10 px-5 type-body-s',
-        md: 'h-12 px-6 type-label',
-        lg: 'h-[52px] px-7 type-label',
+        sm: 'h-9 px-4 type-body-s',
+        md: 'h-11 px-5 type-label',
+        lg: 'h-12 px-6 type-label',
       },
     },
     defaultVariants: { variant: 'primary', size: 'md' },

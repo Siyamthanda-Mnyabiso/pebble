@@ -2,20 +2,27 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { SaveButton } from '@/components/account/save-button';
 import { Icon } from '@/components/icons';
-import { ArrowBadge } from '@/components/ui/button';
 import type { Provider } from '@/data/providers';
 import { AvailabilityPicker } from './availability-picker';
-import { ServicePicker } from './service-picker';
+import { BookingCard } from './service-picker';
 import { ShareButton } from './share-button';
 
 const rand = new Intl.NumberFormat('en-ZA');
 
 const tabs = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'reviews', label: 'Reviews' },
+  { id: 'services', label: 'Services' },
   { id: 'work', label: 'Work' },
-  { id: 'pricing', label: 'Pricing' },
+  { id: 'availability', label: 'Availability' },
+  { id: 'reviews', label: 'Reviews' },
 ];
+
+/** Grid spans for the photo mosaic, by how many photos there are (2 to 5). */
+const mosaic: Record<number, string[]> = {
+  2: ['col-span-3 row-span-2', 'col-span-1 row-span-2'],
+  3: ['col-span-2 row-span-2', 'col-span-2', 'col-span-2'],
+  4: ['col-span-2 row-span-2', 'col-span-2', 'col-span-1', 'col-span-1'],
+  5: ['col-span-2 row-span-2', 'col-span-1', 'col-span-1', 'col-span-1', 'col-span-1'],
+};
 
 function Stars({ value }: { value: number }) {
   const count = Math.max(1, Math.min(5, Math.round(value)));
@@ -26,9 +33,57 @@ function Stars({ value }: { value: number }) {
       aria-label={`${value} out of 5 stars`}
     >
       {Array.from({ length: count }, (_, i) => (
-        <Icon key={i} name="starFilled" size={16} />
+        <Icon key={i} name="starFilled" size={14} />
       ))}
     </span>
+  );
+}
+
+/** The photos shown in the mosaic at the top of the page. */
+function mosaicPhotos(provider: Provider) {
+  return [...new Set([provider.image, ...provider.gallery, ...provider.work])].slice(
+    0,
+    5,
+  );
+}
+
+function Photos({ provider }: { provider: Provider }) {
+  const photos = mosaicPhotos(provider);
+
+  if (photos.length < 2) {
+    return (
+      <div className="bg-subtle relative aspect-[16/8] overflow-hidden rounded-lg">
+        <Image
+          src={photos[0] ?? provider.image}
+          alt={provider.name}
+          fill
+          priority
+          sizes="(min-width: 1280px) 1150px, 100vw"
+          className="object-cover"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid h-[240px] grid-cols-4 grid-rows-2 gap-2 overflow-hidden rounded-lg sm:h-[340px] lg:h-[400px]">
+      {photos.map((src, index) => (
+        <div key={src} className={`bg-subtle relative ${mosaic[photos.length][index]}`}>
+          <Image
+            src={src}
+            alt={index === 0 ? provider.name : ''}
+            fill
+            priority={index === 0}
+            sizes={
+              index === 0
+                ? '(min-width: 1024px) 560px, 60vw'
+                : '(min-width: 1024px) 280px, 30vw'
+            }
+            className="object-cover"
+          />
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -39,211 +94,202 @@ export function ProviderProfile({
   provider: Provider;
   saved?: boolean;
 }) {
-  const recentWork = [...new Set(provider.work)].filter((src) => src !== provider.image);
+  // Work photos the mosaic already shows are not repeated further down.
+  const shown = new Set(mosaicPhotos(provider));
+  const recentWork = [...new Set(provider.work)].filter((src) => !shown.has(src));
   const visibleTabs = tabs.filter((tab) => tab.id !== 'work' || recentWork.length > 0);
-  const thumbs = provider.gallery.slice(1, 4);
-  const extra = provider.gallery.length - 4;
 
   return (
-    <main className="mx-auto w-full max-w-[1440px] px-4 pt-2 pb-24 md:px-8 lg:px-16">
-      <Link
-        href="/explore"
-        className="type-body-s inline-flex items-center gap-2 py-3 font-semibold"
-      >
-        <Icon name="skipBack" size={16} />
-        Back
-      </Link>
+    <main className="mx-auto w-full max-w-[1280px] px-4 pt-4 pb-20 md:px-8 lg:px-16">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <Link
+            href="/explore"
+            className="type-body-s text-muted hover:text-ink inline-flex items-center gap-1.5 py-1 font-semibold"
+          >
+            <Icon name="skipBack" size={14} />
+            All providers
+          </Link>
+          <h1 className="type-h1 mt-1 flex items-center gap-2">
+            {provider.name}
+            {provider.verified ? (
+              <Icon name="verified" size={22} label="Verified provider" />
+            ) : null}
+          </h1>
+          <p className="type-body-s mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+            {provider.reviewCount > 0 ? (
+              <span className="inline-flex items-center gap-1 font-semibold">
+                <Icon name="starFilled" size={13} />
+                {provider.rating.toFixed(1)}
+                <span className="text-muted font-normal">({provider.reviewCount})</span>
+              </span>
+            ) : null}
+            <span className="text-muted inline-flex items-center gap-1">
+              <Icon name="pin" size={14} />
+              {provider.area}
+            </span>
+            {provider.tagline ? (
+              <span className="text-muted">{provider.tagline}</span>
+            ) : null}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <ShareButton name={provider.name} />
+          <SaveButton
+            slug={provider.slug}
+            name={provider.name}
+            initialSaved={saved}
+            size={18}
+            className="bg-subtle size-10 shadow-none"
+          />
+        </div>
+      </div>
 
-      <section
-        id="overview"
-        className="mt-4 grid scroll-mt-24 gap-8 lg:grid-cols-2 lg:gap-12"
-      >
-        <div>
-          <div className="relative aspect-[4/3] overflow-hidden rounded-lg">
-            <Image
-              src={provider.image}
-              alt={`${provider.name}`}
-              fill
-              priority
-              sizes="(min-width: 1024px) 560px, 100vw"
-              className="object-cover"
-            />
-          </div>
-          {thumbs.length > 0 ? (
-            <ul
-              className={`mt-3 grid gap-3 ${extra > 0 ? 'grid-cols-4' : 'grid-cols-3'}`}
-            >
-              {thumbs.map((src) => (
+      <div className="mt-4">
+        <Photos provider={provider} />
+      </div>
+
+      <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-16">
+        <aside className="lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1 lg:self-start">
+          <BookingCard
+            slug={provider.slug}
+            services={provider.services}
+            rating={provider.rating}
+            reviewCount={provider.reviewCount}
+          />
+        </aside>
+
+        <div className="min-w-0 lg:col-start-1 lg:row-start-1">
+          <section id="overview" className="scroll-mt-24">
+            <p className="type-body max-w-[640px]">{provider.about}</p>
+            <p className="type-body-s text-muted mt-3">{provider.replyTime}</p>
+          </section>
+
+          <nav
+            aria-label="Profile sections"
+            className="border-line bg-page sticky top-0 z-10 mt-8 flex gap-6 overflow-x-auto border-b"
+          >
+            {visibleTabs.map((tab) => (
+              <a
+                key={tab.id}
+                href={`#${tab.id}`}
+                className="type-body-s hover:text-muted py-3.5 font-semibold whitespace-nowrap"
+              >
+                {tab.label}
+                {tab.id === 'reviews' && provider.reviewCount > 0
+                  ? ` (${provider.reviewCount})`
+                  : ''}
+              </a>
+            ))}
+          </nav>
+
+          <section id="services" className="scroll-mt-16 pt-8">
+            <h2 className="type-h2">Services and pricing</h2>
+            <p className="type-body-s text-muted mt-1">
+              Starting prices. Your final quote is confirmed before the job starts.
+            </p>
+            <ul className="divide-line mt-4 divide-y">
+              {provider.services.map((service) => (
                 <li
-                  key={src}
-                  className="relative aspect-[4/3] overflow-hidden rounded-md"
+                  key={service.id}
+                  className="relative flex items-center justify-between gap-4 py-4"
                 >
-                  <Image src={src} alt="" fill sizes="140px" className="object-cover" />
+                  <div className="min-w-0">
+                    <h3 className="type-h4">
+                      <Link
+                        href={`/book/${provider.slug}?service=${encodeURIComponent(service.name)}`}
+                        className="after:absolute after:inset-0 hover:underline"
+                      >
+                        {service.name}
+                      </Link>
+                    </h3>
+                    {service.detail ? (
+                      <p className="type-body-s text-muted mt-0.5">{service.detail}</p>
+                    ) : null}
+                  </div>
+                  <p className="type-body-s shrink-0 font-semibold whitespace-nowrap">
+                    From R{rand.format(service.fromPrice)}
+                  </p>
                 </li>
               ))}
-              {extra > 0 ? (
-                <li className="bg-dark text-on-dark type-h3 flex aspect-[4/3] items-center justify-center rounded-md">
-                  +{extra}
-                </li>
-              ) : null}
             </ul>
-          ) : null}
-        </div>
+          </section>
 
-        <div className="flex flex-col">
-          <div className="flex items-center gap-3">
-            <h1 className="type-h1">{provider.name}</h1>
-            {provider.verified ? (
-              <Icon name="verified" size={28} label="Verified provider" />
-            ) : null}
-          </div>
-          <p className="type-body-l text-muted mt-3">{provider.tagline}</p>
-          <p className="type-body-s mt-4 flex flex-wrap items-center gap-x-4 gap-y-1">
-            <span className="inline-flex items-center gap-1.5">
-              <Icon name="starFilled" size={14} />
-              {provider.rating.toFixed(1)} ({provider.reviewCount} reviews)
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Icon name="pin" size={16} />
-              {provider.area} · {provider.distanceKm} km away
-            </span>
-          </p>
-          <p className="type-body mt-5 max-w-[560px]">{provider.about}</p>
-
-          <ServicePicker slug={provider.slug} services={provider.services}>
-            <SaveButton
-              slug={provider.slug}
-              name={provider.name}
-              initialSaved={saved}
-              size={22}
-              className="shadow-card size-[52px]"
-            />
-            <ShareButton name={provider.name} />
-          </ServicePicker>
-        </div>
-      </section>
-
-      <nav
-        aria-label="Profile sections"
-        className="border-line bg-page sticky top-0 z-10 mt-12 flex gap-8 overflow-x-auto border-b"
-      >
-        {visibleTabs.map((tab) => (
-          <a
-            key={tab.id}
-            href={`#${tab.id}`}
-            className="type-body-s hover:text-muted py-4 font-semibold whitespace-nowrap"
-          >
-            {tab.label}
-            {tab.id === 'reviews' ? ` (${provider.reviewCount})` : ''}
-          </a>
-        ))}
-      </nav>
-
-      <section id="pricing" className="scroll-mt-16 pt-12">
-        <h2 className="type-h2">Services and pricing</h2>
-        <p className="type-body-s text-muted mt-2">
-          Clear starting prices. Your final quote is confirmed before the job starts.
-        </p>
-        <ul className="mt-6 flex flex-col gap-4">
-          {provider.services.map((service) => (
-            <li
-              key={service.name}
-              className="bg-page shadow-card relative flex items-center justify-between gap-4 rounded-lg px-6 py-5"
-            >
-              <div>
-                <h3 className="type-h4">
-                  <Link
-                    href={`/book/${provider.slug}?service=${encodeURIComponent(service.name)}`}
-                    className="after:absolute after:inset-0"
+          {recentWork.length > 0 ? (
+            <section id="work" className="border-line mt-8 scroll-mt-16 border-t pt-8">
+              <h2 className="type-h2">Recent work</h2>
+              <ul className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {recentWork.map((src) => (
+                  <li
+                    key={src}
+                    className="relative aspect-[4/3] overflow-hidden rounded-md"
                   >
-                    {service.name}
-                  </Link>
-                </h3>
-                <p className="type-caption text-muted mt-1">{service.detail}</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <p className="type-body-s font-semibold whitespace-nowrap">
-                  From R{rand.format(service.fromPrice)}
-                </p>
-                <ArrowBadge size={40} />
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
+                    <Image
+                      src={src}
+                      alt={`Recent work by ${provider.name}`}
+                      fill
+                      sizes="(min-width: 1024px) 220px, 45vw"
+                      className="object-cover"
+                    />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
 
-      {recentWork.length > 0 ? (
-        <section id="work" className="scroll-mt-16 pt-14">
-          <h2 className="type-h2">Recent work</h2>
-          <p className="type-body-s text-muted mt-2">A few jobs from the last month.</p>
-          <ul className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {recentWork.map((src) => (
-              <li key={src} className="relative aspect-[4/3] overflow-hidden rounded-lg">
-                <Image
-                  src={src}
-                  alt={`Recent work by ${provider.name}`}
-                  fill
-                  sizes="(min-width: 1024px) 25vw, 50vw"
-                  className="object-cover"
-                />
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+          <section
+            id="availability"
+            className="border-line mt-8 scroll-mt-16 border-t pt-8"
+          >
+            <h2 className="type-h2">Availability</h2>
+            <div className="mt-4">
+              <AvailabilityPicker days={provider.availability} />
+            </div>
+          </section>
 
-      <section id="availability" className="scroll-mt-16 pt-14">
-        <h2 className="type-h2">Availability</h2>
-        <p className="type-body-s text-muted mt-2">{provider.replyTime}</p>
-        <div className="mt-6">
-          <AvailabilityPicker days={provider.availability} />
+          <section id="reviews" className="border-line mt-8 scroll-mt-16 border-t pt-8">
+            <h2 className="type-h2 flex items-center gap-2">
+              <Icon name="starFilled" size={18} />
+              {provider.reviewCount > 0
+                ? `${provider.rating.toFixed(1)} · ${provider.reviewCount} reviews`
+                : 'No reviews yet'}
+            </h2>
+            <ul className="mt-6 grid gap-x-10 gap-y-8 md:grid-cols-2">
+              {provider.reviews.map((review, i) => (
+                <li key={`${review.name}-${i}`}>
+                  <div className="flex items-center gap-3">
+                    {review.avatar ? (
+                      <Image
+                        src={review.avatar}
+                        alt=""
+                        width={40}
+                        height={40}
+                        className="size-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="bg-subtle type-label inline-flex size-10 items-center justify-center rounded-full">
+                        {review.name[0]}
+                      </span>
+                    )}
+                    <div>
+                      <p className="type-body-s font-semibold">{review.name}</p>
+                      <p className="type-caption text-muted">
+                        {review.service} · {review.date}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <Stars value={review.rating} />
+                  </div>
+                  {review.quote ? (
+                    <p className="type-body mt-1.5">{review.quote}</p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </section>
         </div>
-      </section>
-
-      <section id="reviews" className="scroll-mt-16 pt-14">
-        <h2 className="type-h2">Reviews</h2>
-        <div className="mt-4 flex items-center gap-4">
-          <p className="type-stat">{provider.rating.toFixed(1)}</p>
-          <div>
-            <Stars value={provider.rating} />
-            <p className="type-caption text-muted mt-1">
-              Based on {provider.reviewCount} reviews
-            </p>
-          </div>
-        </div>
-        <ul className="mt-6 grid gap-6 md:grid-cols-3">
-          {provider.reviews.map((review, i) => (
-            <li
-              key={`${review.name}-${i}`}
-              className="bg-page shadow-card rounded-lg p-6"
-            >
-              <Stars value={review.rating} />
-              {review.quote ? <p className="type-body mt-4">{review.quote}</p> : null}
-              <div className="mt-5 flex items-center gap-3">
-                {review.avatar ? (
-                  <Image
-                    src={review.avatar}
-                    alt=""
-                    width={40}
-                    height={40}
-                    className="size-10 rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="bg-subtle type-label inline-flex size-10 items-center justify-center rounded-full">
-                    {review.name[0]}
-                  </span>
-                )}
-                <div>
-                  <p className="type-body-s font-semibold">{review.name}</p>
-                  <p className="type-caption text-muted">
-                    {review.service} · {review.date}
-                  </p>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
+      </div>
     </main>
   );
 }

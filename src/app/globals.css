@@ -48,13 +48,13 @@
   /* Radius (Radius collection) */
   --radius-sm: 8px;
   --radius-md: 12px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
 
   /* Elevation (effect styles) */
-  --shadow-card: 0 6px 24px rgb(20 23 31 / 0.09);
-  --shadow-raised: 0 12px 32px rgb(20 23 31 / 0.14);
-  --shadow-float: 0 2px 8px rgb(20 23 31 / 0.1);
+  --shadow-card: 0 1px 2px rgb(20 23 31 / 0.06), 0 2px 10px rgb(20 23 31 / 0.06);
+  --shadow-raised: 0 6px 24px rgb(20 23 31 / 0.14);
+  --shadow-float: 0 1px 3px rgb(20 23 31 / 0.14);
 
   --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
 }
@@ -64,70 +64,69 @@
  * matching the Mobile/Display and Mobile/H1 styles.
  */
 @utility type-display {
-  font-size: 42px;
-  line-height: 44px;
-  font-weight: 800;
-  letter-spacing: -1.5px;
+  font-size: 34px;
+  line-height: 38px;
+  font-weight: 700;
+  letter-spacing: -1px;
   @media (min-width: 1024px) {
-    font-size: 72px;
-    line-height: 72px;
-    letter-spacing: -2.5px;
+    font-size: 52px;
+    line-height: 56px;
+    letter-spacing: -1.6px;
   }
 }
 
 @utility type-stat {
-  font-size: 40px;
-  line-height: 44px;
-  font-weight: 800;
-  letter-spacing: -1.2px;
+  font-size: 30px;
+  line-height: 34px;
+  font-weight: 700;
+  letter-spacing: -0.8px;
   @media (min-width: 1024px) {
-    font-size: 56px;
-    line-height: 58px;
-    letter-spacing: -1.8px;
+    font-size: 36px;
+    line-height: 40px;
+    letter-spacing: -1px;
   }
 }
 
 @utility type-h1 {
-  font-size: 32px;
-  line-height: 36px;
-  font-weight: 800;
-  letter-spacing: -0.9px;
+  font-size: 26px;
+  line-height: 32px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
   @media (min-width: 1024px) {
-    font-size: 40px;
-    line-height: 44px;
-    letter-spacing: -1.2px;
+    font-size: 32px;
+    line-height: 38px;
+    letter-spacing: -0.7px;
   }
 }
 
 @utility type-h2 {
-  font-size: 28px;
-  line-height: 34px;
-  font-weight: 800;
-  letter-spacing: -0.7px;
-}
-
-@utility type-h3 {
   font-size: 22px;
   line-height: 28px;
   font-weight: 700;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.4px;
+}
+
+@utility type-h3 {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
 }
 
 @utility type-h4 {
-  font-size: 18px;
-  line-height: 24px;
-  font-weight: 700;
-  letter-spacing: -0.1px;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
 }
 
 @utility type-body-l {
-  font-size: 18px;
-  line-height: 28px;
+  font-size: 16px;
+  line-height: 24px;
 }
 
 @utility type-body {
-  font-size: 16px;
-  line-height: 24px;
+  font-size: 15px;
+  line-height: 22px;
 }
 
 @utility type-body-s {

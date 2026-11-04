@@ -96,7 +96,7 @@ export const primaryLinks = [
 export function SiteNav() {
   return (
     <header className="bg-page">
-      <div className="mx-auto flex h-[72px] max-w-[1440px] items-center gap-10 px-4 md:px-8 lg:h-[88px] lg:px-16">
+      <div className="mx-auto flex h-[72px] max-w-[1440px] items-center gap-10 px-4 md:px-8 lg:h-[72px] lg:px-16">
         <Logo />
 
         <nav aria-label="Primary" className="hidden items-center gap-10 lg:flex">

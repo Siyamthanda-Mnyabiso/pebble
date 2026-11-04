@@ -40,7 +40,7 @@ async function Saved() {
   }
 
   return (
-    <ul className="mt-8 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+    <ul className="mt-8 grid gap-x-5 gap-y-8 sm:grid-cols-2 xl:grid-cols-3">
       {providers.map((provider) => (
         <li key={provider.slug}>
           <ProviderCard provider={provider} saved />

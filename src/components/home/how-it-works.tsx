@@ -7,20 +7,17 @@ export function HowItWorks() {
     <section
       id="how-it-works"
       aria-labelledby="how-heading"
-      className="mx-auto max-w-[1440px] scroll-mt-8 px-4 py-16 md:px-8 lg:px-16 lg:py-24"
+      className="mx-auto max-w-[1440px] scroll-mt-8 px-4 py-10 md:px-8 lg:px-16 lg:py-14"
     >
       <SectionHeader id="how-heading" title="Booked in three simple steps" />
-      <ol className="mt-10 grid gap-6 md:grid-cols-3">
+      <ol className="mt-6 grid gap-5 md:grid-cols-3">
         {steps.map((step) => (
-          <li
-            key={step.title}
-            className="bg-page shadow-card flex flex-col gap-4 rounded-lg p-8"
-          >
-            <span className="bg-dark text-on-dark inline-flex size-[52px] items-center justify-center rounded-full">
-              <Icon name={step.icon} size={24} />
+          <li key={step.title} className="bg-subtle flex flex-col gap-3 rounded-lg p-6">
+            <span className="bg-dark text-on-dark inline-flex size-11 items-center justify-center rounded-full">
+              <Icon name={step.icon} size={20} />
             </span>
             <h3 className="type-h3">{step.title}</h3>
-            <p className="type-body-l text-muted">{step.body}</p>
+            <p className="type-body text-muted">{step.body}</p>
           </li>
         ))}
       </ol>

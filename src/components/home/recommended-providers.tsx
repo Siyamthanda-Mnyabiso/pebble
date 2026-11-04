@@ -6,7 +6,7 @@ import { SectionHeader } from './section-header';
 async function Featured() {
   const providers = await listFeaturedProviders();
   return (
-    <ul className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <ul className="mt-5 grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
       {providers.map((provider) => (
         <li key={provider.slug}>
           <ProviderCard provider={provider} />
@@ -20,7 +20,7 @@ export function RecommendedProviders() {
   return (
     <section
       aria-labelledby="recommended"
-      className="mx-auto max-w-[1440px] px-4 pt-6 pb-16 md:px-8 lg:px-16 lg:pb-20"
+      className="mx-auto max-w-[1440px] px-4 pt-4 pb-10 md:px-8 lg:px-16 lg:pb-14"
     >
       <SectionHeader
         id="recommended"

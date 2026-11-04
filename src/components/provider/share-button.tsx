@@ -27,9 +27,9 @@ export function ShareButton({ name }: { name: string }) {
       onClick={share}
       aria-label={copied ? 'Link copied' : `Share ${name}`}
       title={copied ? 'Link copied' : 'Share'}
-      className="bg-page shadow-card inline-flex size-[52px] items-center justify-center rounded-full"
+      className="bg-subtle hover:bg-charcoal-200 inline-flex size-10 items-center justify-center rounded-full transition-colors"
     >
-      <Icon name={copied ? 'check' : 'share'} size={20} />
+      <Icon name={copied ? 'check' : 'share'} size={18} />
     </button>
   );
 }
