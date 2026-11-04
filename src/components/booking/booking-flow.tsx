@@ -193,6 +193,12 @@ export function BookingFlow({ provider }: { provider: Provider }) {
             </ul>
           </div>
 
+          {/* TODO(supabase): remove once bookings are stored and emails are sent. */}
+          <p className="type-caption text-muted bg-subtle mt-6 rounded-md px-4 py-3">
+            Preview build: bookings are not saved yet, and no provider or email has been
+            notified.
+          </p>
+
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <ButtonLink
               href="/account/bookings"
