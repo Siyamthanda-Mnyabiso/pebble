@@ -68,10 +68,21 @@ export async function loadThreads(
           : customerName.get(booking.user_id) || 'Customer',
       image: provider?.image,
       service: booking.service,
-      last: mine[0].body,
+      last: mine[0].body || 'Photo',
       lastAt: mine[0].created_at,
       unread: mine.filter((r) => r.sender_id !== userId && !r.read_at).length,
     });
   }
   return threads;
+}
+
+/** Messages the signed-in user has not read yet. */
+export async function getUnreadMessages(userId: string): Promise<number> {
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from('messages')
+    .select('id', { count: 'exact', head: true })
+    .is('read_at', null)
+    .neq('sender_id', userId);
+  return count ?? 0;
 }

@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { AccountSidebar, type NavItem } from '@/components/account/sidebar';
 import { requireProvider } from '@/lib/dashboard';
+import { getUnreadMessages } from '@/lib/messages';
 
 const providerNav: NavItem[] = [
   { href: '/dashboard', label: 'Overview', icon: 'home' },
@@ -26,13 +27,16 @@ export default function DashboardLayout({ children }: LayoutProps<'/dashboard'>)
 
 async function Frame({ children }: { children: React.ReactNode }) {
   const { user, profile, provider } = await requireProvider('/dashboard');
+  const unread = await getUnreadMessages(user.id);
   return (
     <div className="flex min-h-dvh flex-col md:flex-row">
       <AccountSidebar
         name={provider?.name ?? (profile.full_name || user.email || '')}
         role="Provider"
         label="Provider dashboard"
-        items={providerNav}
+        items={providerNav.map((item) =>
+          item.href === '/dashboard/messages' ? { ...item, badge: unread } : item,
+        )}
       />
       <main className="min-w-0 flex-1 px-4 pt-6 pb-20 md:px-10 md:pt-14 lg:px-16">
         {children}

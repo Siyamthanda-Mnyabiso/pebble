@@ -5,8 +5,19 @@ import { infoPages } from '@/data/pages';
 // Single-word addresses that belong to real routes or info pages.
 const KNOWN = new Set([
   ...Object.keys(infoPages),
-  'explore', 'account', 'dashboard', 'admin', 'book', 'contact', 'providers',
-  'sitemap', 'sign-in', 'sign-up', 'auth', 'forgot-password', 'reset-password',
+  'explore',
+  'account',
+  'dashboard',
+  'admin',
+  'book',
+  'contact',
+  'providers',
+  'sitemap',
+  'sign-in',
+  'sign-up',
+  'auth',
+  'forgot-password',
+  'reset-password',
 ]);
 
 /** Keeps the Supabase session cookie fresh. It never redirects. */

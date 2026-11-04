@@ -43,10 +43,22 @@ export async function ThreadView({
 
   const { data: messages } = await supabase
     .from('messages')
-    .select('id, sender_id, body, created_at')
+    .select('id, sender_id, body, image_path, created_at')
     .eq('booking_id', id)
     .order('created_at', { ascending: true })
     .returns<ChatMessage[]>();
+
+  // Photos are private, so each gets a link that works for an hour.
+  const withPhotos = messages ?? [];
+  const paths = withPhotos.flatMap((m) => (m.image_path ? [m.image_path] : []));
+  if (paths.length > 0) {
+    const { data: signed } = await supabase.storage
+      .from('chat-images')
+      .createSignedUrls(paths, 3600);
+    const urls = new Map((signed ?? []).map((u) => [u.path, u.signedUrl]));
+    for (const m of withPhotos)
+      m.image_url = m.image_path ? (urls.get(m.image_path) ?? null) : null;
+  }
 
   const base = side === 'customer' ? '/account' : '/dashboard';
 
@@ -70,7 +82,7 @@ export async function ThreadView({
           bookingId={booking.id}
           userId={userId}
           otherName={otherName}
-          initial={messages ?? []}
+          initial={withPhotos}
         />
       </div>
     </div>

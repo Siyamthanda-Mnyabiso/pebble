@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { AccountSidebar, type NavItem } from '@/components/account/sidebar';
 import { getProfile, requireUser } from '@/lib/auth';
+import { getUnreadMessages } from '@/lib/messages';
 
 const accountNav: NavItem[] = [
   { href: '/account/bookings', label: 'Bookings', icon: 'calendar' },
@@ -21,7 +22,10 @@ export default function AccountLayout({ children }: LayoutProps<'/account'>) {
 
 async function Frame({ children }: { children: React.ReactNode }) {
   const user = await requireUser('/account/bookings');
-  const profile = await getProfile(user.id);
+  const [profile, unread] = await Promise.all([
+    getProfile(user.id),
+    getUnreadMessages(user.id),
+  ]);
 
   return (
     <div className="flex min-h-dvh flex-col md:flex-row">
@@ -35,7 +39,9 @@ async function Frame({ children }: { children: React.ReactNode }) {
           ...(profile?.role === 'provider'
             ? [{ href: '/dashboard', label: 'Provider dashboard', icon: 'home' as const }]
             : []),
-          ...accountNav,
+          ...accountNav.map((item) =>
+            item.href === '/account/messages' ? { ...item, badge: unread } : item,
+          ),
         ]}
       />
       <main className="min-w-0 flex-1 px-4 pt-6 pb-20 md:px-10 md:pt-14 lg:px-16">

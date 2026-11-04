@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { SaveButton } from '@/components/account/save-button';
 import { Icon } from '@/components/icons';
 import type { Provider } from '@/data/providers';
+import { PhotoGallery } from './photo-gallery';
 import { AvailabilityPicker } from './availability-picker';
 import { BookingCard } from './service-picker';
 import { ShareButton } from './share-button';
@@ -15,14 +16,6 @@ const tabs = [
   { id: 'availability', label: 'Availability' },
   { id: 'reviews', label: 'Reviews' },
 ];
-
-/** Grid spans for the photo mosaic, by how many photos there are (2 to 5). */
-const mosaic: Record<number, string[]> = {
-  2: ['col-span-3 row-span-2', 'col-span-1 row-span-2'],
-  3: ['col-span-2 row-span-2', 'col-span-2', 'col-span-2'],
-  4: ['col-span-2 row-span-2', 'col-span-2', 'col-span-1', 'col-span-1'],
-  5: ['col-span-2 row-span-2', 'col-span-1', 'col-span-1', 'col-span-1', 'col-span-1'],
-};
 
 function Stars({ value }: { value: number }) {
   const count = Math.max(1, Math.min(5, Math.round(value)));
@@ -39,52 +32,9 @@ function Stars({ value }: { value: number }) {
   );
 }
 
-/** The photos shown in the mosaic at the top of the page. */
-function mosaicPhotos(provider: Provider) {
-  return [...new Set([provider.image, ...provider.gallery, ...provider.work])].slice(
-    0,
-    5,
-  );
-}
-
-function Photos({ provider }: { provider: Provider }) {
-  const photos = mosaicPhotos(provider);
-
-  if (photos.length < 2) {
-    return (
-      <div className="bg-subtle relative aspect-[16/8] overflow-hidden rounded-lg">
-        <Image
-          src={photos[0] ?? provider.image}
-          alt={provider.name}
-          fill
-          priority
-          sizes="(min-width: 1280px) 1150px, 100vw"
-          className="object-cover"
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid h-[240px] grid-cols-4 grid-rows-2 gap-2 overflow-hidden rounded-lg sm:h-[340px] lg:h-[400px]">
-      {photos.map((src, index) => (
-        <div key={src} className={`bg-subtle relative ${mosaic[photos.length][index]}`}>
-          <Image
-            src={src}
-            alt={index === 0 ? provider.name : ''}
-            fill
-            priority={index === 0}
-            sizes={
-              index === 0
-                ? '(min-width: 1024px) 560px, 60vw'
-                : '(min-width: 1024px) 280px, 30vw'
-            }
-            className="object-cover"
-          />
-        </div>
-      ))}
-    </div>
-  );
+/** Every photo of the provider, main photo first, without repeats. */
+function allPhotos(provider: Provider) {
+  return [...new Set([provider.image, ...provider.gallery, ...provider.work])];
 }
 
 export function ProviderProfile({
@@ -95,7 +45,7 @@ export function ProviderProfile({
   saved?: boolean;
 }) {
   // Work photos the mosaic already shows are not repeated further down.
-  const shown = new Set(mosaicPhotos(provider));
+  const shown = new Set(allPhotos(provider).slice(0, 5));
   const recentWork = [...new Set(provider.work)].filter((src) => !shown.has(src));
   const visibleTabs = tabs.filter((tab) => tab.id !== 'work' || recentWork.length > 0);
 
@@ -146,7 +96,7 @@ export function ProviderProfile({
       </div>
 
       <div className="mt-4">
-        <Photos provider={provider} />
+        <PhotoGallery photos={allPhotos(provider)} name={provider.name} />
       </div>
 
       <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-16">

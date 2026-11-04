@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { ExploreHeader } from '@/components/explore/explore-header';
+import { CategoryBar } from '@/components/explore/category-bar';
 import { FilterBar } from '@/components/explore/filter-bar';
 import { ProviderCard } from '@/components/home/provider-card';
 import { SiteFooter } from '@/components/layout/site-footer';
@@ -58,6 +59,9 @@ export default function ExplorePage({ searchParams }: PageProps<'/explore'>) {
       <Suspense fallback={<ExploreHeader area="Choose city" />}>
         <Header searchParams={searchParams} />
       </Suspense>
+      <Suspense fallback={<CategoryBar />}>
+        <Categories searchParams={searchParams} />
+      </Suspense>
       <main className="mx-auto w-full max-w-[1440px] px-4 pt-6 pb-16 md:px-8 lg:px-16">
         <Suspense fallback={<ResultsSkeleton />}>
           <Results searchParams={searchParams} />
@@ -77,6 +81,11 @@ async function Header({ searchParams }: Pick<PageProps<'/explore'>, 'searchParam
   return (
     <ExploreHeader q={first(params.q)} area={area} active={cities.map((c) => c.city)} />
   );
+}
+
+async function Categories({ searchParams }: Pick<PageProps<'/explore'>, 'searchParams'>) {
+  const params = await searchParams;
+  return <CategoryBar current={first(params.category)} q={first(params.q)} />;
 }
 
 async function Results({ searchParams }: Pick<PageProps<'/explore'>, 'searchParams'>) {

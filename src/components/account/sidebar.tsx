@@ -8,7 +8,7 @@ import { Logo } from '@/components/brand/logo';
 import { Icon, type IconName } from '@/components/icons';
 import { cn } from '@/lib/cn';
 
-export type NavItem = { href: string; label: string; icon: IconName };
+export type NavItem = { href: string; label: string; icon: IconName; badge?: number };
 
 function initials(name: string) {
   return (
@@ -93,6 +93,17 @@ export function AccountSidebar({
                 >
                   <Icon name={item.icon} size={20} />
                   {item.label}
+                  {item.badge ? (
+                    <span
+                      className={cn(
+                        'type-caption ml-auto inline-flex min-w-6 items-center justify-center rounded-full px-1.5 font-semibold',
+                        active ? 'bg-page text-ink' : 'bg-dark text-on-dark',
+                      )}
+                    >
+                      <span className="sr-only">{item.badge} unread</span>
+                      <span aria-hidden>{item.badge > 9 ? '9+' : item.badge}</span>
+                    </span>
+                  ) : null}
                 </Link>
               );
             })}
