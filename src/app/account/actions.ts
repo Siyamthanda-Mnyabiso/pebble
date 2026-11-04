@@ -18,7 +18,7 @@ export async function setSavedProvider(slug: string, saved: boolean): Promise<Re
         .from('saved_providers')
         .upsert(
           { user_id: user.id, provider_slug: slug },
-          { onConflict: 'user_id,provider_slug' },
+          { onConflict: 'user_id,provider_slug', ignoreDuplicates: true },
         )
     : await supabase
         .from('saved_providers')

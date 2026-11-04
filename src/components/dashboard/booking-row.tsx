@@ -1,0 +1,116 @@
+import Link from 'next/link';
+import { StatusPill } from '@/components/account/ui';
+import { Icon } from '@/components/icons';
+import type { Customer, DashboardBooking } from '@/lib/dashboard';
+import { formatDay, todayInSA } from '@/lib/dates';
+import { formatRand } from '@/lib/money';
+import { BookingActions } from './booking-actions';
+
+export function BookingRow({
+  booking,
+  customer,
+}: {
+  booking: DashboardBooking;
+  customer?: Customer;
+}) {
+  const today = todayInSA();
+  const actions: Parameters<typeof BookingActions>[0]['actions'] = [];
+  let hint = '';
+
+  if (booking.status === 'pending') {
+    actions.push({ label: 'Accept', status: 'confirmed' });
+    actions.push({ label: 'Decline', status: 'cancelled', danger: true });
+  } else if (booking.status === 'confirmed') {
+    if (booking.scheduled_date <= today) {
+      actions.push({ label: 'Mark complete', status: 'completed' });
+    } else {
+      hint = `Complete it on ${formatDay(booking.scheduled_date)}`;
+    }
+    actions.push({ label: 'Cancel', status: 'cancelled', danger: true });
+  }
+
+  return (
+    <div className="flex flex-wrap items-start gap-x-4 gap-y-3 py-5">
+      <div className="min-w-0 flex-1 basis-56">
+        <p className="type-h4">{booking.service}</p>
+        <p className="type-body-s mt-0.5 font-semibold">
+          {customer?.full_name || 'Customer'}
+          {customer?.phone ? (
+            <>
+              {' · '}
+              <a href={`tel:${customer.phone}`} className="underline">
+                {customer.phone}
+              </a>
+            </>
+          ) : null}
+        </p>
+        <p className="type-body-s text-muted mt-0.5">
+          {formatDay(booking.scheduled_date)} · {booking.start_time.slice(0, 5)} ·{' '}
+          {formatRand(booking.price_cents)}
+        </p>
+        <p className="type-body-s text-muted mt-0.5 flex items-center gap-1.5">
+          <Icon name="pin" size={14} />
+          <span>{booking.address}</span>
+        </p>
+        {booking.notes ? (
+          <p className="type-body-s text-muted mt-1">Note: {booking.notes}</p>
+        ) : null}
+        <p className="type-caption text-muted mt-1">Ref {booking.reference}</p>
+      </div>
+      <div className="flex flex-col items-end gap-3">
+        <StatusPill status={booking.status} />
+        {actions.length > 0 ? (
+          <BookingActions bookingId={booking.id} actions={actions} />
+        ) : null}
+        {hint ? <p className="type-caption text-muted">{hint}</p> : null}
+      </div>
+    </div>
+  );
+}
+
+export function BookingList({
+  title,
+  empty,
+  bookings,
+  customers,
+}: {
+  title: string;
+  empty: string;
+  bookings: DashboardBooking[];
+  customers: Map<string, Customer>;
+}) {
+  return (
+    <section className="mt-10">
+      <h2 className="type-h2">{title}</h2>
+      {bookings.length > 0 ? (
+        <ul className="bg-page shadow-card divide-line mt-5 divide-y rounded-xl px-4 sm:px-6">
+          {bookings.map((booking) => (
+            <li key={booking.id}>
+              <BookingRow booking={booking} customer={customers.get(booking.user_id)} />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="type-body-s text-muted mt-4">{empty}</p>
+      )}
+    </section>
+  );
+}
+
+export function NotLinked() {
+  return (
+    <div className="bg-subtle mt-8 rounded-lg px-6 py-12 text-center">
+      <p className="type-h3">Your listing is not linked yet</p>
+      <p className="type-body-s text-muted mx-auto mt-2 max-w-md">
+        We link each provider account to its Pebble listing by hand while we are in
+        preview. Send us your account email and business name and we will set it up.
+      </p>
+      <Link
+        href="/contact"
+        className="bg-dark text-on-dark type-label mt-5 inline-flex h-12 items-center rounded-full px-6"
+      >
+        Contact us
+      </Link>
+    </div>
+  );
+}

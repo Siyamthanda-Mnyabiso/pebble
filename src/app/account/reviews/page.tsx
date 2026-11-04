@@ -51,17 +51,22 @@ async function Reviews() {
     supabase
       .from('bookings')
       .select('id, provider_slug, service, scheduled_date')
+      .eq('user_id', user.id)
       .eq('status', 'completed')
       .order('scheduled_date', { ascending: false })
       .returns<Waiting[]>(),
     supabase
       .from('reviews')
       .select('id, rating, body, created_at, provider_slug, bookings(service)')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .returns<Written[]>(),
   ]);
 
-  const { data: reviewedBookings } = await supabase.from('reviews').select('booking_id');
+  const { data: reviewedBookings } = await supabase
+    .from('reviews')
+    .select('booking_id')
+    .eq('user_id', user.id);
   const done = new Set((reviewedBookings ?? []).map((r) => r.booking_id));
   const waiting = (completed ?? []).filter((b) => !done.has(b.id));
   const firstName = (profile?.full_name ?? '').split(' ')[0] || 'You';

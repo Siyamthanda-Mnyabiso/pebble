@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import { Suspense } from 'react';
 import { EmptyState, PageHeading, StatusPill } from '@/components/account/ui';
+import { BookingActions } from '@/components/dashboard/booking-actions';
 import { Icon } from '@/components/icons';
 import { ButtonLink } from '@/components/ui/button';
 import { getProvider } from '@/data/providers';
@@ -45,6 +46,7 @@ async function Bookings() {
     supabase
       .from('bookings')
       .select('id, provider_slug, service, scheduled_date, start_time, address, status')
+      .eq('user_id', user.id)
       .order('scheduled_date', { ascending: true })
       .returns<BookingRow[]>(),
     supabase.from('reviews').select('booking_id').eq('user_id', user.id),
@@ -145,6 +147,12 @@ async function Row({
       </div>
       <div className="flex items-center gap-3">
         <StatusPill status={booking.status} />
+        {!past && (booking.status === 'pending' || booking.status === 'confirmed') ? (
+          <BookingActions
+            bookingId={booking.id}
+            actions={[{ label: 'Cancel', status: 'cancelled', danger: true }]}
+          />
+        ) : null}
         {past && booking.status === 'completed' ? (
           reviewed ? null : (
             <ButtonLink href="/account/reviews" variant="secondary" size="sm">

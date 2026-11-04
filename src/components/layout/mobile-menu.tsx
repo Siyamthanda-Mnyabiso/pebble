@@ -8,9 +8,11 @@ import { ButtonLink } from '@/components/ui/button';
 export function MobileMenu({
   links,
   signedIn = false,
+  isProvider = false,
 }: {
   links: { label: string; href: string }[];
   signedIn?: boolean;
+  isProvider?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -46,8 +48,11 @@ export function MobileMenu({
           </nav>
           <div className="mt-5 flex gap-3">
             {signedIn ? (
-              <ButtonLink href="/account/bookings" className="flex-1">
-                Your bookings
+              <ButtonLink
+                href={isProvider ? '/dashboard' : '/account/bookings'}
+                className="flex-1"
+              >
+                {isProvider ? 'Dashboard' : 'Your bookings'}
               </ButtonLink>
             ) : (
               <>

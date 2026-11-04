@@ -8,6 +8,7 @@ export type Profile = {
   phone: string;
   address: string;
   role: 'customer' | 'provider';
+  provider_slug: string | null;
   notify_bookings: boolean;
   notify_reminders: boolean;
   notify_offers: boolean;
@@ -33,7 +34,7 @@ export const getProfile = cache(async (userId: string) => {
   const { data } = await supabase
     .from('profiles')
     .select(
-      'full_name, phone, address, role, notify_bookings, notify_reminders, notify_offers, created_at',
+      'full_name, phone, address, role, provider_slug, notify_bookings, notify_reminders, notify_offers, created_at',
     )
     .eq('id', userId)
     .single<Profile>();
@@ -57,5 +58,5 @@ export function safeNext(value: FormDataEntryValue | string | null | undefined) 
   const next = typeof value === 'string' ? value : '';
   return next.startsWith('/') && !next.startsWith('//') && !next.includes('\\')
     ? next
-    : '/account/bookings';
+    : '/account';
 }

@@ -7,12 +7,7 @@ import { Logo } from '@/components/brand/logo';
 import { Icon, type IconName } from '@/components/icons';
 import { cn } from '@/lib/cn';
 
-const items: { href: string; label: string; icon: IconName }[] = [
-  { href: '/account/bookings', label: 'Bookings', icon: 'calendar' },
-  { href: '/account/saved', label: 'Saved providers', icon: 'heart' },
-  { href: '/account/reviews', label: 'Reviews', icon: 'star' },
-  { href: '/account/settings', label: 'Profile and settings', icon: 'user' },
-];
+export type NavItem = { href: string; label: string; icon: IconName };
 
 function initials(name: string) {
   return (
@@ -25,7 +20,17 @@ function initials(name: string) {
   );
 }
 
-export function AccountSidebar({ name, role }: { name: string; role: string }) {
+export function AccountSidebar({
+  name,
+  role,
+  items,
+  label = 'Account',
+}: {
+  name: string;
+  role: string;
+  items: NavItem[];
+  label?: string;
+}) {
   const pathname = usePathname();
 
   return (
@@ -42,11 +47,14 @@ export function AccountSidebar({ name, role }: { name: string; role: string }) {
           </div>
         </div>
         <nav
-          aria-label="Account"
+          aria-label={label}
           className="-mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-col md:gap-1 md:overflow-visible md:px-0"
         >
           {items.map((item) => {
-            const active = pathname.startsWith(item.href);
+            const active =
+              item.href === '/dashboard'
+                ? pathname === item.href
+                : pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}

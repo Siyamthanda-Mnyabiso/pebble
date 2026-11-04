@@ -1,21 +1,23 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { getUser } from '@/lib/auth';
+import { getProfile, getUser } from '@/lib/auth';
 import { Logo } from '@/components/brand/logo';
 import { ButtonLink } from '@/components/ui/button';
 import { MobileMenu } from './mobile-menu';
 
 export function AuthActions() {
   return (
-    <Suspense fallback={<NavActions user={null} />}>
+    <Suspense fallback={<NavActions user={null} isProvider={false} />}>
       <SignedInNavActions />
     </Suspense>
   );
 }
 
 async function SignedInNavActions() {
-  return <NavActions user={await getUser()} />;
+  const user = await getUser();
+  const profile = user ? await getProfile(user.id) : null;
+  return <NavActions user={user} isProvider={profile?.role === 'provider'} />;
 }
 
 function initialOf(user: User) {
@@ -23,17 +25,17 @@ function initialOf(user: User) {
   return name.trim()[0]!.toUpperCase();
 }
 
-function NavActions({ user }: { user: User | null }) {
+function NavActions({ user, isProvider }: { user: User | null; isProvider: boolean }) {
   return (
     <>
       <div className="ml-auto hidden items-center gap-6 lg:flex">
         {user ? (
           <>
             <Link
-              href="/account/bookings"
+              href={isProvider ? '/dashboard' : '/account/bookings'}
               className="type-body-s hover:text-muted font-semibold"
             >
-              Bookings
+              {isProvider ? 'Dashboard' : 'Bookings'}
             </Link>
             <Link
               href="/account/settings"
@@ -54,7 +56,7 @@ function NavActions({ user }: { user: User | null }) {
           </>
         )}
       </div>
-      <MobileMenu links={primaryLinks} signedIn={Boolean(user)} />
+      <MobileMenu links={primaryLinks} signedIn={Boolean(user)} isProvider={isProvider} />
     </>
   );
 }
