@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { isCity } from '@/data/cities';
 import { serviceCategories } from '@/data/home';
 import { getUser } from '@/lib/auth';
 import { BOOKING_TIMES } from '@/lib/booking';
@@ -77,16 +78,19 @@ export async function createListing(
   const name = field(formData, 'name');
   const category = field(formData, 'category');
   const area = field(formData, 'area');
+  const city = field(formData, 'city');
   if (name.length < 2 || name.length > 80) return { error: 'Enter your business name.' };
   if (!categories.includes(category)) return { error: 'Choose a category.' };
   if (area.length < 2 || area.length > 60)
-    return { error: 'Enter the area you work in.' };
+    return { error: 'Enter the suburb or area you work in.' };
+  if (!isCity(city)) return { error: 'Choose your city.' };
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc('create_my_listing', {
     p_name: name,
     p_category: category,
     p_area: area,
+    p_city: city,
   });
   if (error) return { error: 'We could not create your listing. Please try again.' };
   refresh();
@@ -106,6 +110,7 @@ export async function updateListing(
     tagline: field(formData, 'tagline'),
     about: field(formData, 'about'),
     area: field(formData, 'area'),
+    city: field(formData, 'city'),
     reply_time: field(formData, 'reply_time'),
   };
   if (next.name.length < 2 || next.name.length > 80)
@@ -117,6 +122,7 @@ export async function updateListing(
     return { error: 'Keep the description under 1000 characters.' };
   if (next.area.length < 2 || next.area.length > 60)
     return { error: 'Enter the area you work in.' };
+  if (!isCity(next.city)) return { error: 'Choose your city.' };
   if (next.reply_time.length > 80)
     return { error: 'Keep the reply time under 80 characters.' };
 

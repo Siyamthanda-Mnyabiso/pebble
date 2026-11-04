@@ -13,6 +13,7 @@ import {
 } from '@/app/dashboard/actions';
 import { FormMessage, TextField } from '@/components/auth/fields';
 import { Button } from '@/components/ui/button';
+import { CITY_NAMES } from '@/data/cities';
 import { serviceCategories } from '@/data/home';
 import { BOOKING_TIMES } from '@/lib/booking';
 import { cn } from '@/lib/cn';
@@ -36,6 +37,25 @@ function Save({
 
 function Feedback({ state, ok = 'Saved.' }: { state: FormState; ok?: string }) {
   return <FormMessage error={state.error} notice={state.saved ? ok : undefined} />;
+}
+
+function CitySelect({ defaultValue }: { defaultValue?: string }) {
+  return (
+    <label className="block">
+      <span className="type-body-s mb-2 block font-semibold">City</span>
+      <select
+        name="city"
+        defaultValue={defaultValue ?? 'Cape Town'}
+        className="border-line-strong bg-page type-body-s h-12 w-full rounded-md border px-4"
+      >
+        {CITY_NAMES.map((name) => (
+          <option key={name} value={name}>
+            {name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
 }
 
 function CategorySelect({ defaultValue }: { defaultValue?: string }) {
@@ -66,10 +86,12 @@ export function CreateListingForm() {
     >
       <TextField label="Business name" name="name" required maxLength={80} />
       <CategorySelect />
+      <CitySelect />
       <TextField
-        label="Area you work in"
+        label="Suburb or area"
         name="area"
-        defaultValue="Cape Town"
+        defaultValue=""
+        placeholder="For example Sea Point"
         required
         maxLength={60}
       />
@@ -88,6 +110,7 @@ export function ListingForm({
     tagline: string;
     about: string;
     area: string;
+    city: string;
     replyTime: string;
   };
 }) {
@@ -119,8 +142,9 @@ export function ListingForm({
           className="border-line-strong bg-page focus:border-ink type-body-s w-full rounded-md border p-4 outline-none"
         />
       </label>
+      <CitySelect defaultValue={listing.city} />
       <TextField
-        label="Area"
+        label="Suburb or area"
         name="area"
         defaultValue={listing.area}
         required

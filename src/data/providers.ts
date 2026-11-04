@@ -38,6 +38,7 @@ export type Provider = {
   tagline: string;
   about: string;
   area: string;
+  city: string;
   distanceKm: number;
   verified: boolean;
   rating: number;
@@ -60,6 +61,7 @@ type ProviderRow = {
   tagline: string;
   about: string;
   area: string;
+  city: string;
   distance_km: number;
   verified: boolean;
   image: string;
@@ -79,7 +81,7 @@ type ProviderRow = {
 };
 
 const COLUMNS =
-  'slug, name, category, tagline, about, area, distance_km, verified, image, gallery, work, reply_time, rating, review_count, sample_reviews, provider_services(id, name, detail, from_price, position)';
+  'slug, name, category, tagline, about, area, city, distance_km, verified, image, gallery, work, reply_time, rating, review_count, sample_reviews, provider_services(id, name, detail, from_price, position)';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = [
@@ -158,6 +160,7 @@ function toProvider(
     tagline: row.tagline,
     about: row.about,
     area: row.area,
+    city: row.city,
     distanceKm: row.distance_km,
     verified: row.verified,
     rating: Number(row.rating),
@@ -220,6 +223,7 @@ function monthYear(iso: string) {
 }
 
 export type ProviderFilters = {
+  city?: string;
   q?: string;
   category?: string;
   minRating?: number;
@@ -235,6 +239,7 @@ export type ProviderSearch = { providers: Provider[]; total: number };
 export async function searchProviders(filters: ProviderFilters): Promise<ProviderSearch> {
   const supabase = createPublicClient();
   let query = supabase.from('providers').select(COLUMNS).eq('active', true);
+  if (filters.city) query = query.eq('city', filters.city);
   if (filters.category) query = query.eq('category', filters.category);
   if (filters.minRating) query = query.gte('rating', filters.minRating);
   const { data } = await query.returns<ProviderRow[]>();
@@ -276,13 +281,15 @@ export async function searchProviders(filters: ProviderFilters): Promise<Provide
 }
 
 /** Top providers shown on the home page. */
-export async function listFeaturedProviders(limit = 4): Promise<Provider[]> {
+export async function listFeaturedProviders(
+  city?: string,
+  limit = 4,
+): Promise<Provider[]> {
   const supabase = createPublicClient();
-  const { data } = await supabase
-    .from('providers')
-    .select(COLUMNS)
-    .eq('active', true)
-    .eq('featured', true)
+  let query = supabase.from('providers').select(COLUMNS).eq('active', true);
+  if (city) query = query.eq('city', city);
+  const { data } = await query
+    .order('featured', { ascending: false })
     .order('rating', { ascending: false })
     .limit(limit)
     .returns<ProviderRow[]>();
@@ -353,4 +360,14 @@ export async function listProviderSlugs(): Promise<string[]> {
 
 export function categoryLabel(slug: string): string | undefined {
   return serviceCategories.find((c) => c.slug === slug)?.label;
+}
+
+/** Cities that have at least one bookable provider, with how many. */
+export async function listProviderCities(): Promise<
+  { city: string; providers: number }[]
+> {
+  const { data } = await createPublicClient().rpc('provider_cities');
+  return ((data ?? []) as { city: string; providers: number }[])
+    .map((r) => ({ city: r.city, providers: Number(r.providers) }))
+    .sort((a, b) => b.providers - a.providers);
 }

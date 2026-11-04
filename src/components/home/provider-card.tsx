@@ -10,7 +10,7 @@ export type CardProvider = Pick<
   Provider,
   'slug' | 'name' | 'rating' | 'reviewCount' | 'fromPrice' | 'image'
 > &
-  Partial<Pick<Provider, 'area' | 'tagline'>>;
+  Partial<Pick<Provider, 'area' | 'city' | 'tagline'>>;
 
 /** Photo first, text underneath, no box: the whole card is one link. */
 export function ProviderCard({
@@ -54,9 +54,9 @@ export function ProviderCard({
             </p>
           ) : null}
         </div>
-        {provider.tagline || provider.area ? (
+        {provider.tagline || provider.city ? (
           <p className="type-body-s text-muted mt-0.5 truncate">
-            {provider.tagline || provider.area}
+            {provider.tagline || provider.city}
           </p>
         ) : null}
         <p className="type-body-s mt-1">

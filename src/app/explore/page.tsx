@@ -7,7 +7,13 @@ import { ProviderCard } from '@/components/home/provider-card';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { ButtonLink } from '@/components/ui/button';
 import { getSavedSlugs } from '@/lib/auth';
-import { categoryLabel, searchProviders, type ProviderFilters } from '@/data/providers';
+import {
+  categoryLabel,
+  listProviderCities,
+  searchProviders,
+  type ProviderFilters,
+} from '@/data/providers';
+import { getCity } from '@/lib/city';
 
 export const metadata: Metadata = {
   title: 'Explore services',
@@ -15,7 +21,6 @@ export const metadata: Metadata = {
 };
 
 const PAGE_SIZE = 6;
-const area = 'Cape Town';
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -50,10 +55,8 @@ function parse(params: SearchParams): ProviderFilters & { limit: number } {
 export default function ExplorePage({ searchParams }: PageProps<'/explore'>) {
   return (
     <>
-      <Suspense fallback={<ExploreHeader area={area} />}>
-        {searchParams.then((params) => (
-          <ExploreHeader q={first(params.q)} area={area} />
-        ))}
+      <Suspense fallback={<ExploreHeader area="Choose city" />}>
+        <Header searchParams={searchParams} />
       </Suspense>
       <main className="mx-auto w-full max-w-[1440px] px-4 pt-6 pb-16 md:px-8 lg:px-16">
         <Suspense fallback={<ResultsSkeleton />}>
@@ -65,13 +68,27 @@ export default function ExplorePage({ searchParams }: PageProps<'/explore'>) {
   );
 }
 
+async function Header({ searchParams }: Pick<PageProps<'/explore'>, 'searchParams'>) {
+  const params = await searchParams;
+  const [area, cities] = await Promise.all([
+    getCity(first(params.city)),
+    listProviderCities(),
+  ]);
+  return (
+    <ExploreHeader q={first(params.q)} area={area} active={cities.map((c) => c.city)} />
+  );
+}
+
 async function Results({ searchParams }: Pick<PageProps<'/explore'>, 'searchParams'>) {
   const raw = await searchParams;
-  const filters = parse(raw);
-  const [{ providers, total }, saved] = await Promise.all([
+  const area = await getCity(first(raw.city));
+  const filters = { ...parse(raw), city: area };
+  const [{ providers, total }, saved, cities] = await Promise.all([
     searchProviders(filters),
     getSavedSlugs(),
+    listProviderCities(),
   ]);
+  const elsewhere = cities.filter((c) => c.city !== area);
 
   const label = filters.category ? categoryLabel(filters.category) : undefined;
   const title = label
@@ -83,7 +100,7 @@ async function Results({ searchParams }: Pick<PageProps<'/explore'>, 'searchPara
   const more = new URLSearchParams();
   for (const [key, value] of Object.entries(raw)) {
     const v = first(value);
-    if (v && key !== 'limit') more.set(key, v);
+    if (v && key !== 'limit' && key !== 'city') more.set(key, v);
   }
   more.set('limit', String(filters.limit + PAGE_SIZE));
 
@@ -115,9 +132,12 @@ async function Results({ searchParams }: Pick<PageProps<'/explore'>, 'searchPara
         </ul>
       ) : (
         <div className="bg-subtle mt-6 flex flex-col items-center rounded-lg px-6 py-20 text-center">
-          <h2 className="type-h2">No providers match yet</h2>
+          <h2 className="type-h2">No providers match in {area}</h2>
           <p className="type-body text-muted mt-2 max-w-sm">
-            Try a different search or clear your filters to see everyone nearby.
+            Try a different search or clear your filters.
+            {elsewhere.length > 0
+              ? ` Providers are also available in ${elsewhere.map((c) => c.city).join(', ')}. Change your city at the top of the page.`
+              : ''}
           </p>
           <ButtonLink href="/explore" className="mt-6">
             Clear filters

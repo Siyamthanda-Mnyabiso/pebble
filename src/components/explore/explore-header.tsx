@@ -1,9 +1,18 @@
 import { Logo } from '@/components/brand/logo';
+import { LocationPicker } from '@/components/location/location-picker';
 import { Icon } from '@/components/icons';
 import { AuthActions } from '@/components/layout/site-nav';
 
 /** Compact header for search pages: the search box lives in the bar itself. */
-export function ExploreHeader({ q, area }: { q?: string; area: string }) {
+export function ExploreHeader({
+  q,
+  area,
+  active,
+}: {
+  q?: string;
+  area: string;
+  active?: string[];
+}) {
   return (
     <header className="bg-page relative">
       <div className="mx-auto flex max-w-[1440px] flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 md:px-8 lg:h-[88px] lg:flex-nowrap lg:gap-8 lg:px-16 lg:py-0">
@@ -30,10 +39,11 @@ export function ExploreHeader({ q, area }: { q?: string; area: string }) {
           </button>
         </form>
 
-        <div className="border-line-strong hidden h-12 items-center gap-2 rounded-full border px-5 lg:flex">
-          <Icon name="pin" size={18} />
-          <span className="type-body-s font-semibold">{area}</span>
-        </div>
+        <LocationPicker
+          city={area}
+          active={active}
+          className="border-line-strong h-12 rounded-full border px-5"
+        />
 
         <AuthActions />
       </div>

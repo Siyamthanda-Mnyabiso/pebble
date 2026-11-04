@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import { LocationPicker } from '@/components/location/location-picker';
 import { Icon } from '@/components/icons';
 import { ArrowButton } from '@/components/ui/button';
 
@@ -53,15 +54,7 @@ function SearchBar() {
         />
       </label>
       <span className="bg-line hidden h-8 w-px sm:block" aria-hidden="true" />
-      <label className="hidden items-center gap-2 sm:flex">
-        <Icon name="pin" size={20} className="text-muted" />
-        <span className="sr-only">Area</span>
-        <input
-          name="area"
-          defaultValue="Cape Town"
-          className="type-body-s w-24 bg-transparent font-semibold outline-none"
-        />
-      </label>
+      <LocationPicker className="hidden sm:inline-flex" />
       <ArrowButton size={40} label="Search" type="submit" />
     </form>
   );

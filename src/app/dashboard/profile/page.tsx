@@ -44,6 +44,7 @@ async function Content() {
           tagline: provider.tagline,
           about: provider.about,
           area: provider.area,
+          city: provider.city,
           replyTime: provider.replyTime,
         }}
       />
