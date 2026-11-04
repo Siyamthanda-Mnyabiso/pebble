@@ -5,6 +5,7 @@ import { requireProvider } from '@/lib/dashboard';
 const providerNav: NavItem[] = [
   { href: '/dashboard', label: 'Overview', icon: 'home' },
   { href: '/dashboard/bookings', label: 'Bookings', icon: 'calendar' },
+  { href: '/dashboard/messages', label: 'Messages', icon: 'message' },
   { href: '/dashboard/services', label: 'Services', icon: 'box' },
   { href: '/dashboard/availability', label: 'Availability', icon: 'clock' },
   { href: '/dashboard/profile', label: 'Listing', icon: 'sparkles' },

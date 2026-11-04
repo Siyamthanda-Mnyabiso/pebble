@@ -5,6 +5,7 @@ import { BookingDetail } from '@/components/booking/booking-detail';
 import type { DetailBooking, DetailEvent } from '@/components/booking/booking-detail';
 import { BookingActions } from '@/components/dashboard/booking-actions';
 import { NotLinked, providerActions } from '@/components/dashboard/booking-row';
+import { ButtonLink } from '@/components/ui/button';
 import { requireProvider } from '@/lib/dashboard';
 import { createClient } from '@/lib/supabase/server';
 
@@ -70,14 +71,15 @@ async function Content({
         phone: customer?.phone || undefined,
       }}
       actions={
-        actions.length > 0 || hint ? (
-          <>
-            {actions.length > 0 ? (
-              <BookingActions bookingId={booking.id} actions={actions} />
-            ) : null}
-            {hint ? <p className="type-body-s text-muted">{hint}</p> : null}
-          </>
-        ) : null
+        <>
+          <ButtonLink href={`/dashboard/messages/${booking.id}`} variant="secondary">
+            Message customer
+          </ButtonLink>
+          {actions.length > 0 ? (
+            <BookingActions bookingId={booking.id} actions={actions} />
+          ) : null}
+          {hint ? <p className="type-body-s text-muted">{hint}</p> : null}
+        </>
       }
     />
   );

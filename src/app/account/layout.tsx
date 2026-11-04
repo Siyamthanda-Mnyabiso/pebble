@@ -4,6 +4,7 @@ import { getProfile, requireUser } from '@/lib/auth';
 
 const accountNav: NavItem[] = [
   { href: '/account/bookings', label: 'Bookings', icon: 'calendar' },
+  { href: '/account/messages', label: 'Messages', icon: 'message' },
   { href: '/account/saved', label: 'Saved providers', icon: 'heart' },
   { href: '/account/reviews', label: 'Reviews', icon: 'star' },
   { href: '/account/notifications', label: 'Notifications', icon: 'bell' },

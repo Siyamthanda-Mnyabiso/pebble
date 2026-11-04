@@ -62,6 +62,9 @@ async function Content({
 
   const actions = (
     <>
+      <ButtonLink href={`/account/messages/${booking.id}`} variant="secondary">
+        Message {provider?.name ?? 'provider'}
+      </ButtonLink>
       {upcoming ? (
         provider && 'availability' in provider ? (
           <RescheduleForm
