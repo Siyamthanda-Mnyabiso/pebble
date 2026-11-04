@@ -140,7 +140,9 @@ async function List({
                   )}
                 </Cell>
                 <Cell>{categoryLabel(p.category)}</Cell>
-                <Cell>{p.area ? `${p.area}, ${p.city}` : p.city}</Cell>
+                <Cell>
+                  {p.area && p.area !== p.city ? `${p.area}, ${p.city}` : p.city}
+                </Cell>
                 <Cell>{p.review_count > 0 ? p.rating.toFixed(1) : '–'}</Cell>
                 <Cell>{jobs.get(p.slug) ?? 0}</Cell>
                 <Cell>

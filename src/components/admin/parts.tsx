@@ -94,7 +94,8 @@ export function DailyChart({ points }: { points: { day: string; n: number }[] })
   const w = 600;
   const h = 180;
   const pad = 8;
-  const max = Math.max(1, ...points.map((p) => p.n));
+  const peak = Math.max(0, ...points.map((p) => p.n));
+  const max = Math.max(1, peak);
   const x = (i: number) => pad + (i * (w - pad * 2)) / Math.max(1, points.length - 1);
   const y = (n: number) => h - pad - (n / max) * (h - pad * 2);
   const line = points
@@ -108,7 +109,7 @@ export function DailyChart({ points }: { points: { day: string; n: number }[] })
       <svg
         viewBox={`0 0 ${w} ${h}`}
         role="img"
-        aria-label={`${total} bookings in the last 30 days, up to ${max} a day`}
+        aria-label={`${total} bookings in the last 30 days, up to ${peak} a day`}
         className="h-auto w-full"
       >
         <path d={area} className="fill-subtle" />
@@ -122,7 +123,7 @@ export function DailyChart({ points }: { points: { day: string; n: number }[] })
       </svg>
       <figcaption className="type-caption text-muted mt-2 flex justify-between">
         <span>{points[0]?.day}</span>
-        <span>Peak {max} a day</span>
+        <span>Peak {peak} a day</span>
         <span>{points.at(-1)?.day}</span>
       </figcaption>
     </figure>

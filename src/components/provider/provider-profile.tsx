@@ -76,7 +76,9 @@ export function ProviderProfile({
             ) : null}
             <span className="text-muted inline-flex items-center gap-1">
               <Icon name="pin" size={14} />
-              {provider.area ? `${provider.area}, ${provider.city}` : provider.city}
+              {provider.area && provider.area !== provider.city
+                ? `${provider.area}, ${provider.city}`
+                : provider.city}
             </span>
             {provider.tagline ? (
               <span className="text-muted">{provider.tagline}</span>

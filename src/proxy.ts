@@ -25,7 +25,8 @@ export async function proxy(request: NextRequest) {
   // The info-page route is dynamic, so an unknown address would answer 200. Send
   // those to a path that does not exist so visitors and search engines get a 404.
   const segments = request.nextUrl.pathname.split('/').filter(Boolean);
-  if (segments.length === 1 && !KNOWN.has(segments[0])) {
+  // Files in /public (anything with an extension) are not pages.
+  if (segments.length === 1 && !segments[0].includes('.') && !KNOWN.has(segments[0])) {
     return NextResponse.rewrite(new URL('/_missing/404', request.url));
   }
 
