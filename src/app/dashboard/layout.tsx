@@ -8,6 +8,7 @@ const providerNav: NavItem[] = [
   { href: '/dashboard/services', label: 'Services', icon: 'box' },
   { href: '/dashboard/availability', label: 'Availability', icon: 'clock' },
   { href: '/dashboard/profile', label: 'Listing', icon: 'sparkles' },
+  { href: '/dashboard/photos', label: 'Photos', icon: 'camera' },
   { href: '/dashboard/earnings', label: 'Earnings', icon: 'bolt' },
   { href: '/dashboard/reviews', label: 'Reviews', icon: 'star' },
   { href: '/dashboard/notifications', label: 'Notifications', icon: 'bell' },

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { serviceCategories } from '@/data/home';
 import { getUser } from '@/lib/auth';
 import { BOOKING_TIMES } from '@/lib/booking';
+import { isOwnUpload, MAX_PHOTOS, PHOTO_BUCKET, uploadPath } from '@/lib/photos';
 import { requireProvider } from '@/lib/dashboard';
 import { createClient } from '@/lib/supabase/server';
 
@@ -250,4 +251,84 @@ export async function requestPayout(): Promise<StatusResult> {
   }
   revalidatePath('/dashboard', 'layout');
   return { ok: true };
+}
+
+// Photos ---------------------------------------------------------------------
+
+async function loadPhotos(slug: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('providers')
+    .select('image, work')
+    .eq('slug', slug)
+    .single<{ image: string; work: string[] }>();
+  const image = data?.image ?? '';
+  // The main photo is stored separately; older rows also repeated it in the list.
+  const work = [...new Set(data?.work ?? [])].filter((u) => u !== image);
+  return { supabase, image, work };
+}
+
+async function writePhotos(
+  slug: string,
+  image: string,
+  work: string[],
+): Promise<StatusResult> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('providers')
+    .update({ image, work, gallery: [image, ...work.slice(0, 3)] })
+    .eq('slug', slug);
+  if (error)
+    return { ok: false, error: 'We could not save your photos. Please try again.' };
+  refresh(slug);
+  return { ok: true };
+}
+
+/** Records a photo the browser has already uploaded to the provider's folder. */
+export async function addPhoto(url: string): Promise<StatusResult> {
+  const { provider } = await requireProvider('/dashboard/photos');
+  if (!provider) return { ok: false, error: 'Create your listing first.' };
+  if (!isOwnUpload(url, provider.slug))
+    return { ok: false, error: 'That photo is not valid.' };
+
+  const { image, work } = await loadPhotos(provider.slug);
+  if (work.includes(url) || image === url) return { ok: true };
+  if (1 + work.length >= MAX_PHOTOS) {
+    return {
+      ok: false,
+      error: `You can have up to ${MAX_PHOTOS} photos. Remove one first.`,
+    };
+  }
+  return writePhotos(provider.slug, image, [...work, url]);
+}
+
+export async function setMainPhoto(url: string): Promise<StatusResult> {
+  const { provider } = await requireProvider('/dashboard/photos');
+  if (!provider) return { ok: false, error: 'Create your listing first.' };
+  const { image, work } = await loadPhotos(provider.slug);
+  if (url === image) return { ok: true };
+  if (!work.includes(url)) return { ok: false, error: 'We could not find that photo.' };
+  // The old main photo goes back into the list; the chosen one becomes main.
+  return writePhotos(provider.slug, url, [...work.filter((u) => u !== url), image]);
+}
+
+export async function removePhoto(url: string): Promise<StatusResult> {
+  const { provider } = await requireProvider('/dashboard/photos');
+  if (!provider) return { ok: false, error: 'Create your listing first.' };
+  const { supabase, image, work } = await loadPhotos(provider.slug);
+  if (url === image) {
+    return { ok: false, error: 'Choose another main photo before removing this one.' };
+  }
+  if (!work.includes(url)) return { ok: true };
+
+  const result = await writePhotos(
+    provider.slug,
+    image,
+    work.filter((u) => u !== url),
+  );
+  // Free the storage space too. Built-in images have nothing to delete.
+  if (result.ok && isOwnUpload(url, provider.slug)) {
+    await supabase.storage.from(PHOTO_BUCKET).remove([uploadPath(url)]);
+  }
+  return result;
 }

@@ -39,6 +39,8 @@ export function ProviderProfile({
   provider: Provider;
   saved?: boolean;
 }) {
+  const recentWork = [...new Set(provider.work)].filter((src) => src !== provider.image);
+  const visibleTabs = tabs.filter((tab) => tab.id !== 'work' || recentWork.length > 0);
   const thumbs = provider.gallery.slice(1, 4);
   const extra = provider.gallery.length - 4;
 
@@ -125,7 +127,7 @@ export function ProviderProfile({
         aria-label="Profile sections"
         className="border-line bg-page sticky top-0 z-10 mt-12 flex gap-8 overflow-x-auto border-b"
       >
-        {tabs.map((tab) => (
+        {visibleTabs.map((tab) => (
           <a
             key={tab.id}
             href={`#${tab.id}`}
@@ -170,23 +172,25 @@ export function ProviderProfile({
         </ul>
       </section>
 
-      <section id="work" className="scroll-mt-16 pt-14">
-        <h2 className="type-h2">Recent work</h2>
-        <p className="type-body-s text-muted mt-2">A few jobs from the last month.</p>
-        <ul className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {provider.work.map((src) => (
-            <li key={src} className="relative aspect-[4/3] overflow-hidden rounded-lg">
-              <Image
-                src={src}
-                alt={`Recent work by ${provider.name}`}
-                fill
-                sizes="(min-width: 1024px) 25vw, 50vw"
-                className="object-cover"
-              />
-            </li>
-          ))}
-        </ul>
-      </section>
+      {recentWork.length > 0 ? (
+        <section id="work" className="scroll-mt-16 pt-14">
+          <h2 className="type-h2">Recent work</h2>
+          <p className="type-body-s text-muted mt-2">A few jobs from the last month.</p>
+          <ul className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {recentWork.map((src) => (
+              <li key={src} className="relative aspect-[4/3] overflow-hidden rounded-lg">
+                <Image
+                  src={src}
+                  alt={`Recent work by ${provider.name}`}
+                  fill
+                  sizes="(min-width: 1024px) 25vw, 50vw"
+                  className="object-cover"
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section id="availability" className="scroll-mt-16 pt-14">
         <h2 className="type-h2">Availability</h2>
