@@ -5,7 +5,7 @@ import { EmptyState, PageHeading, StatusPill } from '@/components/account/ui';
 import { BookingActions } from '@/components/dashboard/booking-actions';
 import { Icon } from '@/components/icons';
 import { ButtonLink } from '@/components/ui/button';
-import { getProvider } from '@/data/providers';
+import { getProviderLite } from '@/data/providers';
 import { requireUser } from '@/lib/auth';
 import { formatDay, todayInSA } from '@/lib/dates';
 import { createClient } from '@/lib/supabase/server';
@@ -121,7 +121,7 @@ async function Row({
   reviewed?: boolean;
   past?: boolean;
 }) {
-  const provider = await getProvider(booking.provider_slug);
+  const provider = await getProviderLite(booking.provider_slug);
 
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-3 py-5">

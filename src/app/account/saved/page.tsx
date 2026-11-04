@@ -3,7 +3,7 @@ import { Suspense } from 'react';
 import { EmptyState, PageHeading } from '@/components/account/ui';
 import { ProviderCard } from '@/components/home/provider-card';
 import { ButtonLink } from '@/components/ui/button';
-import { getProvider } from '@/data/providers';
+import { getProviderLite } from '@/data/providers';
 import { getSavedSlugs, requireUser } from '@/lib/auth';
 
 export const metadata: Metadata = { title: 'Saved providers' };
@@ -25,9 +25,9 @@ export default function SavedPage() {
 async function Saved() {
   await requireUser('/account/saved');
   const slugs = [...(await getSavedSlugs())];
-  const providers = (await Promise.all(slugs.map((slug) => getProvider(slug)))).filter(
-    (p) => p !== undefined,
-  );
+  const providers = (
+    await Promise.all(slugs.map((slug) => getProviderLite(slug)))
+  ).filter((p) => p !== undefined);
 
   if (providers.length === 0) {
     return (

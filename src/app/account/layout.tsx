@@ -6,6 +6,7 @@ const accountNav: NavItem[] = [
   { href: '/account/bookings', label: 'Bookings', icon: 'calendar' },
   { href: '/account/saved', label: 'Saved providers', icon: 'heart' },
   { href: '/account/reviews', label: 'Reviews', icon: 'star' },
+  { href: '/account/notifications', label: 'Notifications', icon: 'bell' },
   { href: '/account/settings', label: 'Profile and settings', icon: 'user' },
 ];
 

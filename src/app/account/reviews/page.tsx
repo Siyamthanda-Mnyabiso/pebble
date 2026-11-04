@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { RateStars } from '@/components/account/rate-stars';
 import { EmptyState, PageHeading } from '@/components/account/ui';
 import { Icon } from '@/components/icons';
-import { getProvider } from '@/data/providers';
+import { getProviderLite } from '@/data/providers';
 import { getProfile, requireUser } from '@/lib/auth';
 import { formatDay, formatMonthYear } from '@/lib/dates';
 import { createClient } from '@/lib/supabase/server';
@@ -79,7 +79,7 @@ async function Reviews() {
           <ul className="bg-page shadow-card divide-line mt-5 divide-y rounded-xl px-4 sm:px-6">
             {await Promise.all(
               waiting.map(async (b) => {
-                const provider = await getProvider(b.provider_slug);
+                const provider = await getProviderLite(b.provider_slug);
                 return (
                   <li key={b.id} className="flex flex-wrap items-center gap-4 py-5">
                     <div className="relative size-16 shrink-0 overflow-hidden rounded-md">

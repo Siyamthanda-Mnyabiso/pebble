@@ -1,7 +1,7 @@
 import 'server-only';
 import { cache } from 'react';
 import { redirect } from 'next/navigation';
-import { getProvider } from '@/data/providers';
+import { getProviderLite } from '@/data/providers';
 import { getProfile, requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
@@ -26,7 +26,7 @@ export const requireProvider = cache(async (next: string) => {
   const profile = await getProfile(user.id);
   if (!profile || profile.role !== 'provider') redirect('/account/bookings');
   const provider = profile.provider_slug
-    ? await getProvider(profile.provider_slug)
+    ? await getProviderLite(profile.provider_slug)
     : null;
   return { user, profile, provider };
 });
@@ -56,4 +56,21 @@ export async function loadBookings(slug: string) {
     }
   }
   return { bookings, customers };
+}
+
+/** Weekly hours (by weekday) and upcoming blocked dates for the provider's listing. */
+export async function loadSchedule(slug: string, from: string) {
+  const supabase = await createClient();
+  const [hours, off] = await Promise.all([
+    supabase.from('provider_hours').select('weekday, times').eq('provider_slug', slug),
+    supabase
+      .from('provider_time_off')
+      .select('day')
+      .eq('provider_slug', slug)
+      .gte('day', from)
+      .order('day'),
+  ]);
+  const byDay: Record<number, string[]> = {};
+  for (const h of hours.data ?? []) byDay[h.weekday] = h.times;
+  return { hours: byDay, off: (off.data ?? []).map((o) => o.day as string) };
 }

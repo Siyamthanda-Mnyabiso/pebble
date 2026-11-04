@@ -8,7 +8,7 @@ import { createBooking } from '@/app/book/[slug]/actions';
 import { Icon, type IconName } from '@/components/icons';
 import { Button, ButtonLink } from '@/components/ui/button';
 import type { Provider } from '@/data/providers';
-import { BOOKING_TIMES, SERVICE_FEE } from '@/lib/booking';
+import { SERVICE_FEE } from '@/lib/booking';
 import { cn } from '@/lib/cn';
 import { formatDay } from '@/lib/dates';
 import { Stepper } from './stepper';
@@ -90,7 +90,7 @@ export function BookingFlow({ provider }: { provider: Provider }) {
       provider.services.find((s) => s.name === requested)?.name ??
       provider.services[0].name,
     date: openDays[0]?.iso ?? '',
-    time: BOOKING_TIMES[1],
+    time: openDays[0]?.times[0] ?? '',
     address: '',
     notes: '',
   }));
@@ -107,13 +107,17 @@ export function BookingFlow({ provider }: { provider: Provider }) {
       if (!saved) return;
       const parsed = JSON.parse(saved) as Draft;
       if (parsed.address && provider.services.some((s) => s.name === parsed.service)) {
+        // Keep the saved date and time only if that slot is still open.
+        const day = openDays.find((d) => d.iso === parsed.date);
+        const time = day?.times.includes(parsed.time) ? parsed.time : '';
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        setDraft(parsed);
+        setDraft({ ...parsed, date: day ? parsed.date : '', time });
         setStep(2);
       }
     } catch {
       // Storage can be unavailable or hold stale data; start fresh.
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [provider.services]);
 
   useEffect(() => {
@@ -122,8 +126,16 @@ export function BookingFlow({ provider }: { provider: Provider }) {
   }, [step]);
 
   const service = provider.services.find((s) => s.name === draft.service)!;
+  const dayTimes = openDays.find((d) => d.iso === draft.date)?.times ?? [];
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) => {
-    setDraft((d) => ({ ...d, [key]: value }));
+    setDraft((d) => {
+      const next = { ...d, [key]: value };
+      if (key === 'date') {
+        const times = openDays.find((day) => day.iso === value)?.times ?? [];
+        if (!times.includes(next.time)) next.time = times[0] ?? '';
+      }
+      return next;
+    });
     setErrors((e) => ({ ...e, [key]: undefined }));
   };
 
@@ -300,7 +312,7 @@ export function BookingFlow({ provider }: { provider: Provider }) {
 
                   <fieldset className="flex flex-wrap gap-3">
                     <legend className="sr-only">Start time</legend>
-                    {BOOKING_TIMES.map((time) => (
+                    {dayTimes.map((time) => (
                       <button
                         key={time}
                         type="button"

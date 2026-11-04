@@ -1,12 +1,10 @@
-import type { ServiceCategory } from '@/data/home';
-import { serviceCategories } from '@/data/home';
+import { serviceCategories, type ServiceCategory } from '@/data/home';
+import { createPublicClient } from '@/lib/supabase/public';
 
-/**
- * Static provider data. The async functions at the bottom are the seam where
- * Supabase queries will go; the UI only ever calls those.
- */
+/** Provider data now lives in Supabase. The UI only calls the functions below. */
 
 export type ProviderService = {
+  id: string;
   name: string;
   detail: string;
   /** Starting price in rand. */
@@ -15,10 +13,11 @@ export type ProviderService = {
 
 export type ProviderReview = {
   quote: string;
+  rating: number;
   name: string;
   service: string;
   date: string;
-  avatar: string;
+  avatar?: string;
 };
 
 export type AvailabilityDay = {
@@ -26,7 +25,9 @@ export type AvailabilityDay = {
   iso: string;
   day: string;
   date: number;
-  /** Open booking slots; 0 means the provider is off. */
+  /** Open start times that day; empty means the provider is off. */
+  times: string[];
+  /** Number of open start times. */
   slots: number;
 };
 
@@ -52,221 +53,171 @@ export type Provider = {
   replyTime: string;
 };
 
-const week: AvailabilityDay[] = [
-  { iso: '2026-11-05', day: 'Thu', date: 5, slots: 6 },
-  { iso: '2026-11-06', day: 'Fri', date: 6, slots: 6 },
-  { iso: '2026-11-07', day: 'Sat', date: 7, slots: 2 },
-  { iso: '2026-11-08', day: 'Sun', date: 8, slots: 0 },
-  { iso: '2026-11-09', day: 'Mon', date: 9, slots: 6 },
-  { iso: '2026-11-10', day: 'Tue', date: 10, slots: 6 },
-  { iso: '2026-11-11', day: 'Wed', date: 11, slots: 6 },
+type ProviderRow = {
+  slug: string;
+  name: string;
+  category: string;
+  tagline: string;
+  about: string;
+  area: string;
+  distance_km: number;
+  verified: boolean;
+  image: string;
+  gallery: string[];
+  work: string[];
+  reply_time: string;
+  rating: number;
+  review_count: number;
+  sample_reviews: Omit<ProviderReview, 'rating'>[];
+  provider_services: {
+    id: string;
+    name: string;
+    detail: string;
+    from_price: number;
+    position: number;
+  }[];
+};
+
+const COLUMNS =
+  'slug, name, category, tagline, about, area, distance_km, verified, image, gallery, work, reply_time, rating, review_count, sample_reviews, provider_services(id, name, detail, from_price, position)';
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
-const cleaningWork = [
-  '/images/room-living.jpg',
-  '/images/work-bathroom-reno.jpg',
-  '/images/cleaning.jpg',
-  '/images/bathroom-vanity.jpg',
-];
+const DAYS_AHEAD = 14;
 
-const sampleReviews: ProviderReview[] = [
-  {
-    quote:
-      'On time, friendly and left the flat spotless. The kitchen has never looked better.',
-    name: 'Thandi N.',
-    service: 'Home cleaning',
-    date: 'October 2026',
-    avatar: '/images/portrait-f.jpg',
-  },
-  {
-    quote:
-      'Booked on short notice and everything was signed off by the landlord first time.',
-    name: 'Daniel P.',
-    service: 'Move-out',
-    date: 'October 2026',
-    avatar: '/images/portrait-m.jpg',
-  },
-  {
-    quote: 'Reliable and fair. We now have them come every second Friday.',
-    name: 'Amina S.',
-    service: 'Recurring',
-    date: 'September 2026',
-    avatar: '/images/pro-puff.jpg',
-  },
-];
-
-function cleaner(
-  p: Pick<Provider, 'slug' | 'name' | 'rating' | 'reviewCount' | 'fromPrice' | 'image'> &
-    Partial<Provider>,
-): Provider {
+function saNow() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Johannesburg',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date());
+  const get = (type: string) => parts.find((p) => p.type === type)!.value;
   return {
-    category: 'cleaning',
-    tagline: 'Professional cleaning services',
-    about:
-      'A detail-focused team that keeps your spaces fresh, clean and stress-free. Eco-friendly products, all supplies included and a 100% re-clean guarantee.',
-    area: 'Cape Town',
-    distanceKm: 12,
-    verified: true,
-    gallery: cleaningWork,
-    work: cleaningWork,
-    services: [
-      {
-        name: 'Home cleaning',
-        detail: '3 to 5 hours · Supplies included',
-        fromPrice: p.fromPrice,
-      },
-      {
-        name: 'Deep cleaning',
-        detail: '5 to 8 hours · Kitchen, bathrooms, appliances',
-        fromPrice: p.fromPrice + 400,
-      },
-      {
-        name: 'Office cleaning',
-        detail: 'Evenings and weekends · Recurring discounts',
-        fromPrice: p.fromPrice + 150,
-      },
-      {
-        name: 'Move-in / move-out',
-        detail: 'Empty property · Same-day available',
-        fromPrice: p.fromPrice + 500,
-      },
-    ],
-    reviews: sampleReviews,
-    availability: week,
-    availableToday: true,
-    replyTime: 'Usually replies within 1 hour.',
-    ...p,
+    iso: `${get('year')}-${get('month')}-${get('day')}`,
+    hour: Number(get('hour')),
   };
 }
 
-const providers: Provider[] = [
-  cleaner({
-    slug: 'spark-clean-co',
-    name: 'Spark Clean Co.',
-    rating: 4.9,
-    reviewCount: 86,
-    fromPrice: 450,
-    image: '/images/pro-braids.jpg',
-  }),
-  cleaner({
-    slug: 'cape-home-care',
-    name: 'Cape Home Care',
-    rating: 4.8,
-    reviewCount: 64,
-    fromPrice: 400,
-    image: '/images/pro-van.jpg',
-    distanceKm: 8,
-  }),
-  cleaner({
-    slug: 'freshspace',
-    name: 'FreshSpace',
-    rating: 5.0,
-    reviewCount: 41,
-    fromPrice: 500,
-    image: '/images/pro-puff.jpg',
-    distanceKm: 5,
-    availableToday: false,
-  }),
-  cleaner({
-    slug: 'sparkle-and-co',
-    name: 'Sparkle & Co',
-    rating: 4.7,
-    reviewCount: 52,
-    fromPrice: 380,
-    image: '/images/hero-woman.jpg',
-    distanceKm: 15,
-  }),
-  cleaner({
-    slug: 'tidy-nest-cleaners',
-    name: 'Tidy Nest Cleaners',
-    rating: 4.9,
-    reviewCount: 97,
-    fromPrice: 420,
-    image: '/images/portrait-f.jpg',
-    distanceKm: 10,
-    availableToday: false,
-  }),
-  cleaner({
-    slug: 'mr-shine-home-care',
-    name: 'Mr Shine Home Care',
-    rating: 4.8,
-    reviewCount: 73,
-    fromPrice: 390,
-    image: '/images/portrait-m.jpg',
-    distanceKm: 7,
-  }),
-  {
-    ...cleaner({
-      slug: 'naledi-hair-studio',
-      name: 'Naledi Hair Studio',
-      rating: 4.9,
-      reviewCount: 73,
-      fromPrice: 350,
-      image: '/images/beauty.jpg',
-    }),
-    category: 'beauty',
-    tagline: 'Braids, styling and treatments',
-    about:
-      'A friendly studio for braids, silk presses and treatments. Book a chair or have us come to you.',
-    gallery: ['/images/beauty.jpg', '/images/pro-braids.jpg', '/images/portrait-f.jpg'],
-    work: ['/images/beauty.jpg', '/images/pro-braids.jpg', '/images/portrait-f.jpg'],
-    services: [
-      { name: 'Braids', detail: '3 to 6 hours · Hair included', fromPrice: 350 },
-      { name: 'Silk press', detail: '2 to 3 hours · Wash and style', fromPrice: 450 },
-      { name: 'Treatments', detail: '1 hour · Deep conditioning', fromPrice: 280 },
-    ],
-  },
-  {
-    ...cleaner({
-      slug: 'flowline-plumbing',
-      name: 'Flowline Plumbing',
-      rating: 4.8,
-      reviewCount: 58,
-      fromPrice: 350,
-      image: '/images/work-pipework.jpg',
-    }),
-    category: 'plumbing',
-    tagline: 'Leaks, geysers and blocked drains',
-    about:
-      'Licensed plumbers who arrive on time, fix it properly and clean up after themselves.',
-    gallery: ['/images/work-pipework.jpg', '/images/work-bathroom-tap.jpg'],
-    work: ['/images/work-pipework.jpg', '/images/work-bathroom-tap.jpg'],
-    services: [
-      { name: 'Leak repair', detail: '1 to 2 hours · Parts extra', fromPrice: 350 },
-      {
-        name: 'Geyser service',
-        detail: '2 to 4 hours · Certificate issued',
-        fromPrice: 900,
-      },
-      { name: 'Drain unblocking', detail: '1 hour · Same-day available', fromPrice: 450 },
-    ],
-  },
-  {
-    ...cleaner({
-      slug: 'bright-spark-electrical',
-      name: 'Bright Spark Electrical',
-      rating: 4.7,
-      reviewCount: 39,
-      fromPrice: 420,
-      image: '/images/electrical.jpg',
-    }),
-    category: 'electrical',
-    tagline: 'Wiring, lighting and compliance certificates',
-    about:
-      'Registered electricians for repairs, installs and certificates of compliance.',
-    gallery: ['/images/electrical.jpg'],
-    work: ['/images/electrical.jpg'],
-    services: [
-      { name: 'Fault finding', detail: '1 to 3 hours', fromPrice: 420 },
-      { name: 'Lighting install', detail: 'Per fitting · Supply extra', fromPrice: 180 },
-      {
-        name: 'Compliance certificate',
-        detail: 'Inspection and report',
-        fromPrice: 1200,
-      },
-    ],
-  },
-];
+function addDays(iso: string, n: number) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+}
+
+type Schedule = {
+  hours: Map<number, string[]>;
+  off: Set<string>;
+  booked: Set<string>;
+};
+
+/** Open start times per day: weekly hours, minus time off, taken slots and past times. */
+function buildAvailability(from: string, hourNow: number, schedule: Schedule) {
+  const days: AvailabilityDay[] = [];
+  for (let i = 0; i < DAYS_AHEAD; i++) {
+    const iso = addDays(from, i);
+    const [y, m, d] = iso.split('-').map(Number);
+    const weekday = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+    let times = schedule.off.has(iso) ? [] : (schedule.hours.get(weekday) ?? []);
+    times = times.filter(
+      (t) =>
+        !schedule.booked.has(`${iso}|${t}`) && (i > 0 || Number(t.slice(0, 2)) > hourNow),
+    );
+    days.push({ iso, day: WEEKDAYS[weekday], date: d, times, slots: times.length });
+  }
+  return days;
+}
+
+function toProvider(
+  row: ProviderRow,
+  availability: AvailabilityDay[],
+  reviews: ProviderReview[],
+): Provider {
+  const services = [...row.provider_services]
+    .sort((a, b) => a.position - b.position)
+    .map((s) => ({ id: s.id, name: s.name, detail: s.detail, fromPrice: s.from_price }));
+  return {
+    slug: row.slug,
+    name: row.name,
+    category: row.category,
+    tagline: row.tagline,
+    about: row.about,
+    area: row.area,
+    distanceKm: row.distance_km,
+    verified: row.verified,
+    rating: Number(row.rating),
+    reviewCount: row.review_count,
+    fromPrice: services.length ? Math.min(...services.map((s) => s.fromPrice)) : 0,
+    image: row.image,
+    gallery: row.gallery,
+    work: row.work,
+    services,
+    reviews,
+    availability,
+    availableToday: (availability[0]?.slots ?? 0) > 0,
+    replyTime: row.reply_time,
+  };
+}
+
+async function loadSchedules(slugs: string[]) {
+  const supabase = createPublicClient();
+  const now = saNow();
+  const to = addDays(now.iso, DAYS_AHEAD - 1);
+  const [hours, off, booked] = await Promise.all([
+    supabase
+      .from('provider_hours')
+      .select('provider_slug, weekday, times')
+      .in('provider_slug', slugs),
+    supabase
+      .from('provider_time_off')
+      .select('provider_slug, day')
+      .in('provider_slug', slugs)
+      .gte('day', now.iso)
+      .lte('day', to),
+    Promise.all(
+      slugs.map(async (slug) => {
+        const { data } = await supabase.rpc('booked_times', {
+          p_slug: slug,
+          p_from: now.iso,
+          p_to: to,
+        });
+        return [slug, (data ?? []) as { day: string; t: string }[]] as const;
+      }),
+    ),
+  ]);
+
+  const result = new Map<string, Schedule>();
+  for (const slug of slugs) {
+    result.set(slug, { hours: new Map(), off: new Set(), booked: new Set() });
+  }
+  for (const h of hours.data ?? [])
+    result.get(h.provider_slug)?.hours.set(h.weekday, h.times);
+  for (const o of off.data ?? []) result.get(o.provider_slug)?.off.add(o.day);
+  for (const [slug, rows] of booked) {
+    for (const b of rows) result.get(slug)?.booked.add(`${b.day}|${b.t}`);
+  }
+  return { schedules: result, now };
+}
+
+function monthYear(iso: string) {
+  const [y, m] = iso.split('-').map(Number);
+  return `${MONTHS[m - 1]} ${y}`;
+}
 
 export type ProviderFilters = {
   q?: string;
@@ -274,56 +225,130 @@ export type ProviderFilters = {
   minRating?: number;
   minPrice?: number;
   maxPrice?: number;
-  availability?: 'today' | 'week';
-  sort?: 'recommended' | 'rating' | 'price-asc' | 'price-desc';
+  availability?: string;
+  sort?: string;
   limit?: number;
 };
 
-export type ProviderSearch = {
-  providers: Provider[];
-  total: number;
-};
+export type ProviderSearch = { providers: Provider[]; total: number };
 
 export async function searchProviders(filters: ProviderFilters): Promise<ProviderSearch> {
+  const supabase = createPublicClient();
+  let query = supabase.from('providers').select(COLUMNS).eq('active', true);
+  if (filters.category) query = query.eq('category', filters.category);
+  if (filters.minRating) query = query.gte('rating', filters.minRating);
+  const { data } = await query.returns<ProviderRow[]>();
+  const rows = data ?? [];
+
+  const { schedules, now } = await loadSchedules(rows.map((r) => r.slug));
   const q = filters.q?.trim().toLowerCase();
 
-  let found = providers.filter((p) => {
-    if (filters.category && p.category !== filters.category) return false;
-    if (q) {
-      const haystack = `${p.name} ${p.category} ${p.tagline} ${p.services
-        .map((s) => s.name)
-        .join(' ')}`.toLowerCase();
-      if (!haystack.includes(q)) return false;
-    }
-    if (filters.minRating && p.rating < filters.minRating) return false;
-    if (filters.minPrice !== undefined && p.fromPrice < filters.minPrice) return false;
-    if (filters.maxPrice !== undefined && p.fromPrice > filters.maxPrice) return false;
-    if (filters.availability === 'today' && !p.availableToday) return false;
-    return true;
-  });
+  let found = rows
+    .filter((row) => row.provider_services.length > 0)
+    .map((row) =>
+      toProvider(row, buildAvailability(now.iso, now.hour, schedules.get(row.slug)!), []),
+    )
+    .filter((p) => {
+      if (q) {
+        const haystack = `${p.name} ${p.category} ${p.tagline} ${p.services
+          .map((s) => s.name)
+          .join(' ')}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      if (filters.minPrice !== undefined && p.fromPrice < filters.minPrice) return false;
+      if (filters.maxPrice !== undefined && p.fromPrice > filters.maxPrice) return false;
+      if (filters.availability === 'today' && !p.availableToday) return false;
+      return true;
+    });
 
   switch (filters.sort) {
-    case 'rating':
-      found = [...found].sort((a, b) => b.rating - a.rating);
-      break;
     case 'price-asc':
-      found = [...found].sort((a, b) => a.fromPrice - b.fromPrice);
+      found = found.sort((a, b) => a.fromPrice - b.fromPrice);
       break;
     case 'price-desc':
-      found = [...found].sort((a, b) => b.fromPrice - a.fromPrice);
+      found = found.sort((a, b) => b.fromPrice - a.fromPrice);
       break;
+    default:
+      found = found.sort((a, b) => b.rating - a.rating || b.reviewCount - a.reviewCount);
   }
 
-  const limit = filters.limit ?? 6;
-  return { providers: found.slice(0, limit), total: found.length };
+  return { providers: found.slice(0, filters.limit ?? 6), total: found.length };
+}
+
+/** Top providers shown on the home page. */
+export async function listFeaturedProviders(limit = 4): Promise<Provider[]> {
+  const supabase = createPublicClient();
+  const { data } = await supabase
+    .from('providers')
+    .select(COLUMNS)
+    .eq('active', true)
+    .eq('featured', true)
+    .order('rating', { ascending: false })
+    .limit(limit)
+    .returns<ProviderRow[]>();
+  return (data ?? [])
+    .filter((row) => row.provider_services.length > 0)
+    .map((row) => toProvider(row, [], []));
 }
 
 export async function getProvider(slug: string): Promise<Provider | undefined> {
-  return providers.find((p) => p.slug === slug);
+  const supabase = createPublicClient();
+  const { data: row } = await supabase
+    .from('providers')
+    .select(COLUMNS)
+    .eq('slug', slug)
+    .eq('active', true)
+    .maybeSingle<ProviderRow>();
+  if (!row || row.provider_services.length === 0) return undefined;
+
+  const [{ schedules, now }, real] = await Promise.all([
+    loadSchedules([slug]),
+    supabase.rpc('provider_reviews', { p_slug: slug }),
+  ]);
+
+  const realReviews: ProviderReview[] = (
+    (real.data ?? []) as {
+      rating: number;
+      body: string;
+      first_name: string;
+      service: string;
+      created_at: string;
+    }[]
+  ).map((r) => ({
+    quote: r.body,
+    rating: r.rating,
+    name: r.first_name,
+    service: r.service,
+    date: monthYear(r.created_at.slice(0, 10)),
+  }));
+  const sample = (row.sample_reviews ?? []).map((r) => ({ ...r, rating: 5 }));
+
+  return toProvider(
+    row,
+    buildAvailability(now.iso, now.hour, schedules.get(slug)!),
+    [...realReviews, ...sample].slice(0, 6),
+  );
+}
+
+/** A provider without availability or reviews: cheap, for lists and lookups. */
+export async function getProviderLite(slug: string): Promise<Provider | undefined> {
+  const supabase = createPublicClient();
+  const { data: row } = await supabase
+    .from('providers')
+    .select(COLUMNS)
+    .eq('slug', slug)
+    .eq('active', true)
+    .maybeSingle<ProviderRow>();
+  return row ? toProvider(row, [], []) : undefined;
 }
 
 export async function listProviderSlugs(): Promise<string[]> {
-  return providers.map((p) => p.slug);
+  const supabase = createPublicClient();
+  const { data } = await supabase
+    .from('providers')
+    .select('slug, provider_services(id)')
+    .eq('active', true);
+  return (data ?? []).filter((r) => r.provider_services.length > 0).map((r) => r.slug);
 }
 
 export function categoryLabel(slug: string): string | undefined {

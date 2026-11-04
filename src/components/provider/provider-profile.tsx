@@ -18,13 +18,14 @@ const tabs = [
 ];
 
 function Stars({ value }: { value: number }) {
+  const count = Math.max(1, Math.min(5, Math.round(value)));
   return (
     <span
       className="inline-flex gap-0.5"
       role="img"
       aria-label={`${value} out of 5 stars`}
     >
-      {Array.from({ length: 5 }, (_, i) => (
+      {Array.from({ length: count }, (_, i) => (
         <Icon key={i} name="starFilled" size={16} />
       ))}
     </span>
@@ -207,18 +208,27 @@ export function ProviderProfile({
           </div>
         </div>
         <ul className="mt-6 grid gap-6 md:grid-cols-3">
-          {provider.reviews.map((review) => (
-            <li key={review.name} className="bg-page shadow-card rounded-lg p-6">
-              <Stars value={5} />
-              <p className="type-body mt-4">{review.quote}</p>
+          {provider.reviews.map((review, i) => (
+            <li
+              key={`${review.name}-${i}`}
+              className="bg-page shadow-card rounded-lg p-6"
+            >
+              <Stars value={review.rating} />
+              {review.quote ? <p className="type-body mt-4">{review.quote}</p> : null}
               <div className="mt-5 flex items-center gap-3">
-                <Image
-                  src={review.avatar}
-                  alt=""
-                  width={40}
-                  height={40}
-                  className="size-10 rounded-full object-cover"
-                />
+                {review.avatar ? (
+                  <Image
+                    src={review.avatar}
+                    alt=""
+                    width={40}
+                    height={40}
+                    className="size-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="bg-subtle type-label inline-flex size-10 items-center justify-center rounded-full">
+                    {review.name[0]}
+                  </span>
+                )}
                 <div>
                   <p className="type-body-s font-semibold">{review.name}</p>
                   <p className="type-caption text-muted">

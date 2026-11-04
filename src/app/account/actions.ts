@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getProvider } from '@/data/providers';
+import { getProviderLite } from '@/data/providers';
 import { getUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
@@ -10,7 +10,7 @@ type Result = { ok: true } | { ok: false; reason: 'auth' | 'invalid' | 'failed' 
 export async function setSavedProvider(slug: string, saved: boolean): Promise<Result> {
   const user = await getUser();
   if (!user) return { ok: false, reason: 'auth' };
-  if (!(await getProvider(slug))) return { ok: false, reason: 'invalid' };
+  if (!(await getProviderLite(slug))) return { ok: false, reason: 'invalid' };
 
   const supabase = await createClient();
   const { error } = saved
@@ -111,4 +111,16 @@ export async function changePassword(
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: 'We could not update your password. Please try again.' };
   return { saved: true };
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  const user = await getUser();
+  if (!user) return;
+  const supabase = await createClient();
+  await supabase
+    .from('notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('user_id', user.id)
+    .is('read_at', null);
+  revalidatePath('/', 'layout');
 }

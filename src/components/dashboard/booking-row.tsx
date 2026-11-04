@@ -1,10 +1,10 @@
-import Link from 'next/link';
 import { StatusPill } from '@/components/account/ui';
 import { Icon } from '@/components/icons';
 import type { Customer, DashboardBooking } from '@/lib/dashboard';
 import { formatDay, todayInSA } from '@/lib/dates';
 import { formatRand } from '@/lib/money';
 import { BookingActions } from './booking-actions';
+import { CreateListingForm } from './forms';
 
 export function BookingRow({
   booking,
@@ -100,17 +100,12 @@ export function BookingList({
 export function NotLinked() {
   return (
     <div className="bg-subtle mt-8 rounded-lg px-6 py-12 text-center">
-      <p className="type-h3">Your listing is not linked yet</p>
+      <p className="type-h3">Set up your listing</p>
       <p className="type-body-s text-muted mx-auto mt-2 max-w-md">
-        We link each provider account to its Pebble listing by hand while we are in
-        preview. Send us your account email and business name and we will set it up.
+        Tell us about your business to get a public profile. You can add services, prices
+        and your hours next.
       </p>
-      <Link
-        href="/contact"
-        className="bg-dark text-on-dark type-label mt-5 inline-flex h-12 items-center rounded-full px-6"
-      >
-        Contact us
-      </Link>
+      <CreateListingForm />
     </div>
   );
 }

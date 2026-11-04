@@ -1,6 +1,20 @@
-import { recommendedProviders } from '@/data/home';
+import { Suspense } from 'react';
+import { listFeaturedProviders } from '@/data/providers';
 import { ProviderCard } from './provider-card';
 import { SectionHeader } from './section-header';
+
+async function Featured() {
+  const providers = await listFeaturedProviders();
+  return (
+    <ul className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      {providers.map((provider) => (
+        <li key={provider.slug}>
+          <ProviderCard provider={provider} />
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export function RecommendedProviders() {
   return (
@@ -15,13 +29,9 @@ export function RecommendedProviders() {
         linkLabel="See all providers"
         href="/explore"
       />
-      <ul className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {recommendedProviders.map((provider) => (
-          <li key={provider.slug}>
-            <ProviderCard provider={provider} />
-          </li>
-        ))}
-      </ul>
+      <Suspense fallback={<div className="bg-subtle mt-6 h-64 rounded-lg" aria-hidden />}>
+        <Featured />
+      </Suspense>
     </section>
   );
 }

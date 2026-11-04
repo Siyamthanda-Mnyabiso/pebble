@@ -1,14 +1,15 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { getProfile, getUser } from '@/lib/auth';
+import { getProfile, getUnreadCount, getUser } from '@/lib/auth';
 import { Logo } from '@/components/brand/logo';
+import { Icon } from '@/components/icons';
 import { ButtonLink } from '@/components/ui/button';
 import { MobileMenu } from './mobile-menu';
 
 export function AuthActions() {
   return (
-    <Suspense fallback={<NavActions user={null} isProvider={false} />}>
+    <Suspense fallback={<NavActions user={null} isProvider={false} unread={0} />}>
       <SignedInNavActions />
     </Suspense>
   );
@@ -17,7 +18,10 @@ export function AuthActions() {
 async function SignedInNavActions() {
   const user = await getUser();
   const profile = user ? await getProfile(user.id) : null;
-  return <NavActions user={user} isProvider={profile?.role === 'provider'} />;
+  const unread = user ? await getUnreadCount(user.id) : 0;
+  return (
+    <NavActions user={user} isProvider={profile?.role === 'provider'} unread={unread} />
+  );
 }
 
 function initialOf(user: User) {
@@ -25,7 +29,15 @@ function initialOf(user: User) {
   return name.trim()[0]!.toUpperCase();
 }
 
-function NavActions({ user, isProvider }: { user: User | null; isProvider: boolean }) {
+function NavActions({
+  user,
+  isProvider,
+  unread,
+}: {
+  user: User | null;
+  isProvider: boolean;
+  unread: number;
+}) {
   return (
     <>
       <div className="ml-auto hidden items-center gap-6 lg:flex">
@@ -36,6 +48,20 @@ function NavActions({ user, isProvider }: { user: User | null; isProvider: boole
               className="type-body-s hover:text-muted font-semibold"
             >
               {isProvider ? 'Dashboard' : 'Bookings'}
+            </Link>
+            <Link
+              href="/account/notifications"
+              aria-label={
+                unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'
+              }
+              className="bg-subtle relative inline-flex size-10 items-center justify-center rounded-full"
+            >
+              <Icon name="bell" size={20} />
+              {unread > 0 ? (
+                <span className="bg-ink text-on-dark type-caption absolute -top-1 -right-1 inline-flex min-w-5 items-center justify-center rounded-full px-1">
+                  {unread > 9 ? '9+' : unread}
+                </span>
+              ) : null}
             </Link>
             <Link
               href="/account/settings"

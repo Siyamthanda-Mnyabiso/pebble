@@ -2,7 +2,7 @@
 
 import { getProvider } from '@/data/providers';
 import { getUser } from '@/lib/auth';
-import { BOOKING_TIMES, SERVICE_FEE } from '@/lib/booking';
+import { SERVICE_FEE } from '@/lib/booking';
 import { createClient } from '@/lib/supabase/server';
 
 export type BookingInput = {
@@ -32,8 +32,8 @@ export async function createBooking(input: BookingInput): Promise<BookingResult>
   if (!provider || !service) return { ok: false, error: 'Choose a service to book.' };
 
   const day = provider.availability.find((d) => d.iso === input.date);
-  if (!day || day.slots === 0 || !BOOKING_TIMES.includes(input.time)) {
-    return { ok: false, error: 'Choose an available date and time.' };
+  if (!day || !day.times.includes(input.time)) {
+    return { ok: false, error: 'That time is no longer available. Choose another.' };
   }
 
   const address = input.address.trim();
@@ -61,6 +61,12 @@ export async function createBooking(input: BookingInput): Promise<BookingResult>
       fee_cents: SERVICE_FEE * 100,
     });
     if (!error) return { ok: true, reference };
+    if (error.code === '23505' && error.message.includes('bookings_slot_unique')) {
+      return {
+        ok: false,
+        error: 'Someone just booked that time. Please choose another.',
+      };
+    }
     if (error.code !== '23505') break; // only retry on a reference collision
   }
   return { ok: false, error: 'We could not save your booking. Please try again.' };

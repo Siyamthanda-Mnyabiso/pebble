@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { cn } from '@/lib/cn';
 import type { AvailabilityDay } from '@/data/providers';
 
-export function AvailabilityPicker({ days }: { days: AvailabilityDay[] }) {
+export function AvailabilityPicker({ days: allDays }: { days: AvailabilityDay[] }) {
+  const days = allDays.slice(0, 7);
   const firstOpen = Math.max(
     0,
     days.findIndex((d) => d.slots > 0),
@@ -17,7 +18,7 @@ export function AvailabilityPicker({ days }: { days: AvailabilityDay[] }) {
         const off = day.slots === 0;
         const active = index === selected;
         return (
-          <li key={day.day}>
+          <li key={day.iso}>
             <button
               type="button"
               disabled={off}

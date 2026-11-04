@@ -28,41 +28,6 @@ export type ProviderSummary = {
   image: string;
 };
 
-export const recommendedProviders: ProviderSummary[] = [
-  {
-    slug: 'spark-clean-co',
-    name: 'Spark Clean Co.',
-    rating: 4.9,
-    reviewCount: 86,
-    fromPrice: 450,
-    image: '/images/pro-braids.jpg',
-  },
-  {
-    slug: 'cape-home-care',
-    name: 'Cape Home Care',
-    rating: 4.8,
-    reviewCount: 64,
-    fromPrice: 400,
-    image: '/images/pro-van.jpg',
-  },
-  {
-    slug: 'freshspace',
-    name: 'FreshSpace',
-    rating: 5.0,
-    reviewCount: 41,
-    fromPrice: 500,
-    image: '/images/pro-puff.jpg',
-  },
-  {
-    slug: 'naledi-hair-studio',
-    name: 'Naledi Hair Studio',
-    rating: 4.9,
-    reviewCount: 73,
-    fromPrice: 350,
-    image: '/images/hero-woman.jpg',
-  },
-];
-
 export const trustStats = [
   { value: '4.8', label: 'Average rating from 60,000 jobs' },
   { value: '12,000+', label: 'Background-checked providers' },
