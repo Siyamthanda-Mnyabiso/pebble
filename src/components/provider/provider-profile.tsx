@@ -5,6 +5,7 @@ import { Icon, type IconName } from '@/components/icons';
 import { ArrowBadge, ButtonLink } from '@/components/ui/button';
 import type { Provider } from '@/data/providers';
 import { AvailabilityPicker } from './availability-picker';
+import { ShareButton } from './share-button';
 
 const rand = new Intl.NumberFormat('en-ZA');
 const serviceIcons: IconName[] = ['home', 'sparkles', 'box'];
@@ -138,13 +139,7 @@ export function ProviderProfile({
               size={22}
               className="shadow-card size-[52px]"
             />
-            <button
-              type="button"
-              aria-label="Share"
-              className="bg-page shadow-card inline-flex size-[52px] items-center justify-center rounded-full"
-            >
-              <Icon name="share" size={20} />
-            </button>
+            <ShareButton name={provider.name} />
           </div>
         </div>
       </section>

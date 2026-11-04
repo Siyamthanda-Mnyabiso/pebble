@@ -11,6 +11,7 @@ export default function SignUpPage({ searchParams }: PageProps<'/sign-up'>) {
       {searchParams.then((params) => (
         <SignUpForm
           next={safeNext(typeof params.next === 'string' ? params.next : null)}
+          initialRole={params.role === 'provider' ? 'provider' : 'customer'}
         />
       ))}
     </Suspense>

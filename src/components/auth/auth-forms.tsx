@@ -65,10 +65,20 @@ export function SignInForm({ next, linkError }: { next: string; linkError: boole
   );
 }
 
-export function SignUpForm({ next }: { next: string }) {
+export function SignUpForm({
+  next,
+  initialRole = 'customer',
+}: {
+  next: string;
+  initialRole?: 'customer' | 'provider';
+}) {
   const [state, action] = useActionState(signUp, initial);
   const [role, setRole] = useState<'customer' | 'provider'>(
-    state.fields?.role === 'provider' ? 'provider' : 'customer',
+    state.fields?.role
+      ? state.fields.role === 'provider'
+        ? 'provider'
+        : 'customer'
+      : initialRole,
   );
 
   if (state.notice) {
