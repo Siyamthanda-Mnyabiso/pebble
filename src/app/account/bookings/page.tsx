@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Suspense } from 'react';
 import { EmptyState, PageHeading, StatusPill } from '@/components/account/ui';
 import { BookingActions } from '@/components/dashboard/booking-actions';
@@ -135,7 +136,11 @@ async function Row({
         />
       </div>
       <div className="min-w-0 flex-1 basis-48">
-        <p className="type-h4">{booking.service}</p>
+        <p className="type-h4">
+          <Link href={`/account/bookings/${booking.id}`} className="hover:underline">
+            {booking.service}
+          </Link>
+        </p>
         <p className="type-body-s text-muted mt-0.5">
           {provider ? `${provider.name} · ` : ''}
           {formatDay(booking.scheduled_date)} · {booking.start_time.slice(0, 5)}

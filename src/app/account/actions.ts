@@ -125,3 +125,38 @@ export async function markAllNotificationsRead(): Promise<void> {
     .is('read_at', null);
   revalidatePath('/', 'layout');
 }
+
+export type RescheduleResult = { ok: true } | { ok: false; error: string };
+
+/** Moves one of the customer's bookings. The database checks the provider's hours and slots. */
+export async function rescheduleBooking(
+  bookingId: string,
+  date: string,
+  time: string,
+): Promise<RescheduleResult> {
+  const user = await getUser();
+  if (!user) return { ok: false, error: 'Please sign in again.' };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) {
+    return { ok: false, error: 'Choose a date and time.' };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('reschedule_booking', {
+    p_id: bookingId,
+    p_date: date,
+    p_time: time,
+  });
+  if (error) {
+    // The database raises plain-language messages for the cases a customer can fix.
+    return {
+      ok: false,
+      error:
+        error.code === 'P0001'
+          ? `${error.message.replace(/\.$/, '')}.`
+          : 'We could not reschedule this booking. Please try again.',
+    };
+  }
+  revalidatePath('/account', 'layout');
+  revalidatePath('/dashboard', 'layout');
+  return { ok: true };
+}

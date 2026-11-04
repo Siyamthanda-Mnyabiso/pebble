@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { StatusPill } from '@/components/account/ui';
 import { Icon } from '@/components/icons';
 import type { Customer, DashboardBooking } from '@/lib/dashboard';
@@ -6,15 +7,12 @@ import { formatRand } from '@/lib/money';
 import { BookingActions } from './booking-actions';
 import { CreateListingForm } from './forms';
 
-export function BookingRow({
-  booking,
-  customer,
-}: {
-  booking: DashboardBooking;
-  customer?: Customer;
-}) {
+type ActionList = Parameters<typeof BookingActions>[0]['actions'];
+
+/** The buttons a provider gets for a booking, and a hint when one is not available yet. */
+export function providerActions(booking: DashboardBooking) {
   const today = todayInSA();
-  const actions: Parameters<typeof BookingActions>[0]['actions'] = [];
+  const actions: ActionList = [];
   let hint = '';
 
   if (booking.status === 'pending') {
@@ -28,11 +26,26 @@ export function BookingRow({
     }
     actions.push({ label: 'Cancel', status: 'cancelled', danger: true });
   }
+  return { actions, hint };
+}
+
+export function BookingRow({
+  booking,
+  customer,
+}: {
+  booking: DashboardBooking;
+  customer?: Customer;
+}) {
+  const { actions, hint } = providerActions(booking);
 
   return (
     <div className="flex flex-wrap items-start gap-x-4 gap-y-3 py-5">
       <div className="min-w-0 flex-1 basis-56">
-        <p className="type-h4">{booking.service}</p>
+        <p className="type-h4">
+          <Link href={`/dashboard/bookings/${booking.id}`} className="hover:underline">
+            {booking.service}
+          </Link>
+        </p>
         <p className="type-body-s mt-0.5 font-semibold">
           {customer?.full_name || 'Customer'}
           {customer?.phone ? (
