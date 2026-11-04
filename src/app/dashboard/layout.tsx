@@ -10,8 +10,8 @@ const providerNav: NavItem[] = [
   { href: '/dashboard/profile', label: 'Listing', icon: 'sparkles' },
   { href: '/dashboard/earnings', label: 'Earnings', icon: 'bolt' },
   { href: '/dashboard/reviews', label: 'Reviews', icon: 'star' },
-  { href: '/account/notifications', label: 'Notifications', icon: 'bell' },
-  { href: '/account/settings', label: 'Account settings', icon: 'user' },
+  { href: '/dashboard/notifications', label: 'Notifications', icon: 'bell' },
+  { href: '/dashboard/settings', label: 'Account settings', icon: 'user' },
 ];
 
 export default function DashboardLayout({ children }: LayoutProps<'/dashboard'>) {

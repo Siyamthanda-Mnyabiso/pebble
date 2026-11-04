@@ -94,6 +94,7 @@ export async function updateProfile(
 
   if (error) return { error: 'We could not save your changes. Please try again.' };
   revalidatePath('/account/settings');
+  revalidatePath('/dashboard/settings');
   return { saved: true };
 }
 

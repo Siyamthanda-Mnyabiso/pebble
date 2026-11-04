@@ -50,7 +50,7 @@ function NavActions({
               {isProvider ? 'Dashboard' : 'Bookings'}
             </Link>
             <Link
-              href="/account/notifications"
+              href={isProvider ? '/dashboard/notifications' : '/account/notifications'}
               aria-label={
                 unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'
               }
@@ -64,7 +64,7 @@ function NavActions({
               ) : null}
             </Link>
             <Link
-              href="/account/settings"
+              href={isProvider ? '/dashboard/settings' : '/account/settings'}
               aria-label="Your account"
               className="bg-dark text-on-dark type-label inline-flex size-10 items-center justify-center rounded-full"
             >
