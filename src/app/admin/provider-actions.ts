@@ -89,7 +89,8 @@ export async function setCheck(
     p_value: value,
   });
   if (error) return { ok: false, error: message(error) };
-  revalidatePath(`/admin/providers/${slug}`);
+  // No revalidation: the page keeps the checklist in the browser, and re-rendering
+  // it would reload the video and documents for no reason.
   return { ok: true };
 }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { createContext, useContext, useRef, useState, useTransition } from 'react';
 import {
   approveProvider,
   rejectProvider,
@@ -12,39 +12,87 @@ import {
   type DecisionResult,
 } from '@/app/admin/provider-actions';
 import { Button } from '@/components/ui/button';
+import { ADMIN_CHECKS } from '@/lib/verification-meta';
+
+type ChecksValue = {
+  checks: Record<string, boolean>;
+  toggle: (field: string, value: boolean) => void;
+  error: string;
+  /** Resolves once every tick has been saved. */
+  flush: () => Promise<void>;
+};
+
+const ChecksContext = createContext<ChecksValue | null>(null);
+
+function useChecks() {
+  const value = useContext(ChecksContext);
+  if (!value) throw new Error('Checklist components must sit inside ChecksProvider');
+  return value;
+}
+
+/**
+ * Holds the checklist in the browser so a tick shows instantly and the approval
+ * button reacts at once. The save runs in the background and the tick is undone
+ * if it fails. The database still decides whether approval is allowed.
+ */
+export function ChecksProvider({
+  slug,
+  initial,
+  children,
+}: {
+  slug: string;
+  initial: Record<string, boolean>;
+  children: React.ReactNode;
+}) {
+  const [checks, setChecks] = useState(initial);
+  const [error, setError] = useState('');
+  // Saves run one after another so the database sees the ticks in order.
+  const queue = useRef<Promise<unknown>>(Promise.resolve());
+
+  function toggle(field: string, value: boolean) {
+    setError('');
+    setChecks((current) => ({ ...current, [field]: value }));
+    queue.current = queue.current.then(async () => {
+      const result = await setCheck(slug, field, value);
+      if (!result.ok) {
+        setChecks((current) => ({ ...current, [field]: !value }));
+        setError(result.error ?? 'That did not save. Please try again.');
+      }
+    });
+  }
+
+  const flush = async () => {
+    await queue.current;
+  };
+
+  return (
+    <ChecksContext.Provider value={{ checks, toggle, error, flush }}>
+      {children}
+    </ChecksContext.Provider>
+  );
+}
 
 export function VettingChecklist({
-  slug,
   items,
   locked,
 }: {
-  slug: string;
-  items: { field: string; label: string; checked: boolean; hint: string }[];
+  items: { field: string; label: string; hint: string }[];
   locked: boolean;
 }) {
-  const router = useRouter();
-  const [error, setError] = useState('');
-  const [pending, start] = useTransition();
+  const { checks, toggle, error } = useChecks();
 
   return (
     <div>
       <ul className="divide-line divide-y">
         {items.map((item) => (
           <li key={item.field} className="py-3">
-            <label className="flex items-start gap-3">
+            <label className="flex cursor-pointer items-start gap-3">
               <input
                 type="checkbox"
-                checked={item.checked}
-                disabled={locked || pending}
+                checked={checks[item.field] ?? false}
+                disabled={locked}
                 className="mt-1 size-5 accent-black"
-                onChange={(e) =>
-                  start(async () => {
-                    setError('');
-                    const result = await setCheck(slug, item.field, e.target.checked);
-                    if (!result.ok) setError(result.error ?? 'That did not work.');
-                    router.refresh();
-                  })
-                }
+                onChange={(e) => toggle(item.field, e.target.checked)}
               />
               <span>
                 <span className="type-body-s block font-semibold">{item.label}</span>
@@ -66,12 +114,18 @@ export function VettingChecklist({
 export function DecisionPanel({
   slug,
   status,
-  blockers,
+  providerBlockers,
 }: {
   slug: string;
   status: string;
-  blockers: string[];
+  /** What the provider still has to supply. The checklist below is added live. */
+  providerBlockers: string[];
 }) {
+  const { checks, flush } = useChecks();
+  const blockers = [
+    ...providerBlockers,
+    ...ADMIN_CHECKS.filter((c) => !checks[c.field]).map((c) => c.label),
+  ];
   const router = useRouter();
   const [note, setNote] = useState('');
   const [result, setResult] = useState<DecisionResult | null>(null);
@@ -85,6 +139,7 @@ export function DecisionPanel({
     }
     setConfirm(null);
     start(async () => {
+      await flush();
       const outcome = await action();
       setResult(outcome);
       if (outcome.ok) {

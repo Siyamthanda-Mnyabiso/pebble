@@ -3,7 +3,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { StatusBadge } from '@/components/verification/status';
-import { DecisionPanel, VettingChecklist } from '@/components/verification/admin-panels';
+import {
+  ChecksProvider,
+  DecisionPanel,
+  VettingChecklist,
+} from '@/components/verification/admin-panels';
 import {
   DocumentPreview,
   PortfolioGallery,
@@ -119,7 +123,6 @@ async function Content({
     verification.video_path !== '' &&
     verification.video_path !== verification.approved_video_path;
   const locked = verification.status !== 'pending_review';
-  const all = [...blockers.provider, ...blockers.admin];
 
   const hints: Record<string, string> = {
     intro_video_reviewed: 'Watch the video. Is it the business, clear and appropriate?',
@@ -260,27 +263,36 @@ async function Content({
         </p>
       </Section>
 
-      <Section title="Vetting checklist">
-        <VettingChecklist
-          slug={slug}
-          locked={locked}
-          items={ADMIN_CHECKS.map((c) => ({
-            field: c.field,
-            label: c.label,
-            checked: verification[c.field],
-            hint: hints[c.field],
-          }))}
-        />
-        {locked ? (
-          <p className="type-caption text-muted mt-3">
-            The checklist can only be changed while a listing is under review.
-          </p>
-        ) : null}
-      </Section>
+      <ChecksProvider
+        slug={slug}
+        initial={Object.fromEntries(
+          ADMIN_CHECKS.map((c) => [c.field, verification[c.field]]),
+        )}
+      >
+        <Section title="Vetting checklist">
+          <VettingChecklist
+            locked={locked}
+            items={ADMIN_CHECKS.map((c) => ({
+              field: c.field,
+              label: c.label,
+              hint: hints[c.field],
+            }))}
+          />
+          {locked ? (
+            <p className="type-caption text-muted mt-3">
+              The checklist can only be changed while a listing is under review.
+            </p>
+          ) : null}
+        </Section>
 
-      <Section title="Decision">
-        <DecisionPanel slug={slug} status={verification.status} blockers={all} />
-      </Section>
+        <Section title="Decision">
+          <DecisionPanel
+            slug={slug}
+            status={verification.status}
+            providerBlockers={blockers.provider}
+          />
+        </Section>
+      </ChecksProvider>
 
       {events.length > 0 ? (
         <Section title="History">
