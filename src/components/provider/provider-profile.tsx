@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { SaveButton } from '@/components/account/save-button';
 import { Icon } from '@/components/icons';
-import { ArrowBadge, ButtonLink } from '@/components/ui/button';
+import { ArrowBadge } from '@/components/ui/button';
 import type { Provider } from '@/data/providers';
 import { AvailabilityPicker } from './availability-picker';
 import { ServicePicker } from './service-picker';
