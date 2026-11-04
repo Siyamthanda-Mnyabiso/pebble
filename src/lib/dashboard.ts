@@ -1,7 +1,7 @@
 import 'server-only';
 import { cache } from 'react';
 import { redirect } from 'next/navigation';
-import { getProviderLite } from '@/data/providers';
+import { getOwnProvider } from '@/data/providers';
 import { getProfile, requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
@@ -26,7 +26,7 @@ export const requireProvider = cache(async (next: string) => {
   const profile = await getProfile(user.id);
   if (!profile || profile.role !== 'provider') redirect('/account/bookings');
   const provider = profile.provider_slug
-    ? await getProviderLite(profile.provider_slug)
+    ? await getOwnProvider(profile.provider_slug)
     : null;
   return { user, profile, provider };
 });

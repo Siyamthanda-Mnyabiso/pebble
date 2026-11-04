@@ -6,6 +6,9 @@ import { BookingList, NotLinked } from '@/components/dashboard/booking-row';
 import { loadBookings, requireProvider } from '@/lib/dashboard';
 import { todayInSA } from '@/lib/dates';
 import { formatRand } from '@/lib/money';
+import { createClient } from '@/lib/supabase/server';
+import { STATUS_META, type VerificationStatus } from '@/lib/verification';
+import { StatusBadge } from '@/components/verification/status';
 
 export const metadata: Metadata = { title: 'Provider dashboard' };
 
@@ -34,6 +37,14 @@ async function Overview() {
   }
 
   const { bookings, customers } = await loadBookings(provider.slug);
+  const { data: ver } = await (
+    await createClient()
+  )
+    .from('provider_verification')
+    .select('status')
+    .eq('provider_slug', provider.slug)
+    .maybeSingle<{ status: VerificationStatus }>();
+  const vStatus = ver?.status ?? 'draft';
   const today = todayInSA();
   const requests = bookings.filter((b) => b.status === 'pending');
   const upcoming = bookings.filter(
@@ -67,6 +78,22 @@ async function Overview() {
         title={`Welcome back${first ? `, ${first}` : ''}`}
         subtitle={`Here is how ${provider.name} is doing.`}
       />
+      {vStatus !== 'approved' ? (
+        <Link
+          href="/dashboard/verification"
+          className="bg-subtle hover:bg-line mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl px-5 py-4"
+        >
+          <span>
+            <span className="type-body-s block font-semibold">
+              {STATUS_META[vStatus].headline}
+            </span>
+            <span className="type-body-s text-muted block">
+              {STATUS_META[vStatus].message}
+            </span>
+          </span>
+          <StatusBadge status={vStatus} />
+        </Link>
+      ) : null}
       <ul className="mt-8 grid grid-cols-2 gap-4 xl:grid-cols-4">
         {stats.map((stat) => (
           <li key={stat.label}>

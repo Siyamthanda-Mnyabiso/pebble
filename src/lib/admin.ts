@@ -55,8 +55,3 @@ export type ProviderRow = {
   verified: boolean;
   active: boolean;
 };
-
-export function providerStatus(p: Pick<ProviderRow, 'verified' | 'active'>) {
-  if (!p.active) return 'suspended' as const;
-  return p.verified ? ('active' as const) : ('pending' as const);
-}

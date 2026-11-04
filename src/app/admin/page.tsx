@@ -58,8 +58,8 @@ async function Overview() {
   const actions = [
     {
       n: stats.providers_pending,
-      label: 'providers awaiting verification',
-      href: '/admin/providers?status=pending',
+      label: 'providers awaiting review',
+      href: '/admin/providers?status=pending_review',
     },
     {
       n: stats.pending_payouts,

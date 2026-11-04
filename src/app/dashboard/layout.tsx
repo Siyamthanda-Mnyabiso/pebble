@@ -5,6 +5,7 @@ import { getUnreadMessages } from '@/lib/messages';
 
 const providerNav: NavItem[] = [
   { href: '/dashboard', label: 'Overview', icon: 'home' },
+  { href: '/dashboard/verification', label: 'Verification', icon: 'verified' },
   { href: '/dashboard/bookings', label: 'Bookings', icon: 'calendar' },
   { href: '/dashboard/messages', label: 'Messages', icon: 'message' },
   { href: '/dashboard/services', label: 'Services', icon: 'box' },

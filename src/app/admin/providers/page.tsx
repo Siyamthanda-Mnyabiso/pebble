@@ -2,23 +2,22 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { PageHeading } from '@/components/account/ui';
-import { Cell, Empty, Pill, Stat, Stats, Table } from '@/components/admin/parts';
-import { RowAction } from '@/components/admin/row-action';
+import { Cell, Empty, Stat, Stats, Table } from '@/components/admin/parts';
+import { StatusBadge } from '@/components/verification/status';
+import type { VerificationStatus } from '@/lib/verification';
 import { categoryLabel } from '@/data/providers';
-import { providerStatus, requireAdmin, type ProviderRow } from '@/lib/admin';
+import { requireAdmin, type ProviderRow } from '@/lib/admin';
 import { cn } from '@/lib/cn';
 import { createClient } from '@/lib/supabase/server';
-import { setProviderState } from '../actions';
 
 export const metadata: Metadata = { title: 'Providers' };
 
 const tabs = [
   { id: 'all', label: 'All' },
-  { id: 'pending', label: 'Pending' },
+  { id: 'pending_review', label: 'Pending review' },
+  { id: 'changes_requested', label: 'Changes requested' },
   { id: 'suspended', label: 'Suspended' },
 ] as const;
-
-const tone = { active: 'green', pending: 'grey', suspended: 'red' } as const;
 
 export default function Page({ searchParams }: PageProps<'/admin/providers'>) {
   return (
@@ -43,14 +42,22 @@ async function List({
   const q = (typeof params.q === 'string' ? params.q : '').trim().toLowerCase();
 
   const supabase = await createClient();
-  const [{ data }, { data: done }] = await Promise.all([
+  const [{ data }, { data: done }, { data: states }] = await Promise.all([
     supabase
       .from('providers')
       .select('slug, name, category, city, area, rating, review_count, verified, active')
       .order('name')
       .returns<ProviderRow[]>(),
     supabase.from('bookings').select('provider_slug').eq('status', 'completed'),
+    supabase.from('provider_verification').select('provider_slug, status'),
   ]);
+  const state = new Map(
+    (states ?? []).map((v) => [
+      v.provider_slug as string,
+      v.status as VerificationStatus,
+    ]),
+  );
+  const statusOf = (slug: string): VerificationStatus => state.get(slug) ?? 'draft';
   const all = data ?? [];
   const jobs = new Map<string, number>();
   for (const b of done ?? [])
@@ -58,8 +65,9 @@ async function List({
 
   const counts = {
     all: all.length,
-    pending: all.filter((p) => providerStatus(p) === 'pending').length,
-    suspended: all.filter((p) => providerStatus(p) === 'suspended').length,
+    pending_review: all.filter((p) => statusOf(p.slug) === 'pending_review').length,
+    changes_requested: all.filter((p) => statusOf(p.slug) === 'changes_requested').length,
+    suspended: all.filter((p) => statusOf(p.slug) === 'suspended').length,
   };
   const rated = all.filter((p) => p.review_count > 0);
   const avg = rated.length
@@ -67,7 +75,7 @@ async function List({
     : '–';
 
   const rows = all
-    .filter((p) => status === 'all' || providerStatus(p) === status)
+    .filter((p) => status === 'all' || statusOf(p.slug) === status)
     .filter(
       (p) =>
         !q || `${p.name} ${p.city} ${p.area} ${p.category}`.toLowerCase().includes(q),
@@ -77,10 +85,10 @@ async function List({
     <>
       <Stats>
         <Stat
-          label="Active providers"
-          value={all.filter((p) => providerStatus(p) === 'active').length}
+          label="Approved providers"
+          value={all.filter((p) => statusOf(p.slug) === 'approved').length}
         />
-        <Stat label="Awaiting verification" value={counts.pending} />
+        <Stat label="Awaiting review" value={counts.pending_review} />
         <Stat label="Suspended" value={counts.suspended} />
         <Stat label="Average rating" value={avg} />
       </Stats>
@@ -127,17 +135,13 @@ async function List({
       ) : (
         <Table head={['Provider', 'Category', 'City', 'Rating', 'Jobs', 'Status', '']}>
           {rows.map((p) => {
-            const s = providerStatus(p);
+            const st = statusOf(p.slug);
             return (
               <tr key={p.slug}>
                 <Cell className="font-semibold">
-                  {s === 'suspended' ? (
-                    p.name
-                  ) : (
-                    <Link href={`/providers/${p.slug}`} className="hover:underline">
-                      {p.name}
-                    </Link>
-                  )}
+                  <Link href={`/admin/providers/${p.slug}`} className="hover:underline">
+                    {p.name}
+                  </Link>
                 </Cell>
                 <Cell>{categoryLabel(p.category)}</Cell>
                 <Cell>
@@ -146,31 +150,15 @@ async function List({
                 <Cell>{p.review_count > 0 ? p.rating.toFixed(1) : '–'}</Cell>
                 <Cell>{jobs.get(p.slug) ?? 0}</Cell>
                 <Cell>
-                  <Pill tone={tone[s]}>{s}</Pill>
+                  <StatusBadge status={st} />
                 </Cell>
                 <Cell>
-                  <span className="flex flex-wrap gap-2">
-                    {s === 'pending' ? (
-                      <RowAction
-                        label="Approve"
-                        action={setProviderState.bind(null, p.slug, 'approve')}
-                      />
-                    ) : null}
-                    {s === 'suspended' ? (
-                      <RowAction
-                        label="Reinstate"
-                        variant="secondary"
-                        action={setProviderState.bind(null, p.slug, 'reinstate')}
-                      />
-                    ) : (
-                      <RowAction
-                        label="Suspend"
-                        variant="secondary"
-                        confirm
-                        action={setProviderState.bind(null, p.slug, 'suspend')}
-                      />
-                    )}
-                  </span>
+                  <Link
+                    href={`/admin/providers/${p.slug}`}
+                    className="type-body-s font-semibold underline"
+                  >
+                    {st === 'pending_review' ? 'Review' : 'View'}
+                  </Link>
                 </Cell>
               </tr>
             );

@@ -1,5 +1,6 @@
 import { serviceCategories, type ServiceCategory } from '@/data/home';
 import { createPublicClient } from '@/lib/supabase/public';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 
 /** Provider data now lives in Supabase. The UI only calls the functions below. */
 
@@ -345,6 +346,20 @@ export async function getProviderLite(slug: string): Promise<Provider | undefine
     .select(COLUMNS)
     .eq('slug', slug)
     .eq('active', true)
+    .maybeSingle<ProviderRow>();
+  return row ? toProvider(row, [], []) : undefined;
+}
+
+/**
+ * The signed-in owner's own listing, even while it is a draft or suspended and
+ * therefore hidden from the public. Row security limits this to the owner.
+ */
+export async function getOwnProvider(slug: string): Promise<Provider | undefined> {
+  const supabase = await createServerClient();
+  const { data: row } = await supabase
+    .from('providers')
+    .select(COLUMNS)
+    .eq('slug', slug)
     .maybeSingle<ProviderRow>();
   return row ? toProvider(row, [], []) : undefined;
 }

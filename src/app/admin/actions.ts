@@ -14,30 +14,6 @@ function refresh() {
   revalidatePath('/');
 }
 
-export async function setProviderState(
-  slug: string,
-  state: 'approve' | 'suspend' | 'reinstate',
-): Promise<AdminResult> {
-  await requireAdmin('/admin/providers');
-  const supabase = await createClient();
-  const { data: current } = await supabase
-    .from('providers')
-    .select('verified')
-    .eq('slug', slug)
-    .maybeSingle();
-  if (!current) return failed;
-  const { error } = await supabase.rpc('admin_set_provider', {
-    p_slug: slug,
-    // Approving verifies; suspending and reinstating leave verification alone.
-    p_verified: state === 'approve' ? true : current.verified,
-    p_active: state !== 'suspend',
-  });
-  if (error) return failed;
-  refresh();
-  revalidatePath(`/providers/${slug}`);
-  return { ok: true };
-}
-
 export async function resolvePayout(
   id: string,
   status: 'paid' | 'rejected',
