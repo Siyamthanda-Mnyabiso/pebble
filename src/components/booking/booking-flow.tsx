@@ -405,10 +405,10 @@ export function BookingFlow({ provider }: { provider: Provider }) {
                       aria-hidden="true"
                     />
                     <div>
-                      <p className="type-body font-semibold">Pay after the job is done</p>
+                      <p className="type-body font-semibold">Nothing to pay yet</p>
                       <p className="type-body-s text-muted mt-0.5">
-                        Card on file is only charged when your provider marks the job
-                        complete.
+                        You pay the provider&apos;s listed price, with no booking fee.
+                        Payments are not switched on in this preview.
                       </p>
                     </div>
                   </div>

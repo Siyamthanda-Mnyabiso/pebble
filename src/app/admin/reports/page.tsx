@@ -29,7 +29,7 @@ async function Months() {
         'Completed',
         'Cancelled',
         'Cancellation rate',
-        'Platform fees',
+        'Pebble commission',
       ]}
     >
       {months.map((m) => (

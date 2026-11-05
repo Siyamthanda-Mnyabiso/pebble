@@ -14,6 +14,7 @@ import { ButtonLink } from '@/components/ui/button';
 import { getProvider, getProviderLite } from '@/data/providers';
 import { requireUser } from '@/lib/auth';
 import { todayInSA } from '@/lib/dates';
+import { loadEvidence } from '@/lib/disputes';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = { title: 'Booking' };
@@ -70,6 +71,9 @@ async function Content({
     ]);
   if (!booking) notFound();
 
+  const evidence = disputes?.[0]
+    ? await loadEvidence(supabase, disputes[0].id, user.id)
+    : [];
   const today = todayInSA();
   const active =
     booking.status === 'pending' ||
@@ -103,7 +107,9 @@ async function Content({
       {booking.status === 'awaiting_confirmation' ? (
         <ConfirmOrReport bookingId={booking.id} confirmBy={booking.confirm_by} />
       ) : null}
-      {disputes?.[0] ? <DisputeSummary dispute={disputes[0]} viewer="customer" /> : null}
+      {disputes?.[0] ? (
+        <DisputeSummary dispute={disputes[0]} viewer="customer" evidence={evidence} />
+      ) : null}
       {booking.status === 'completed' && !review ? (
         <ButtonLink href="/account/reviews">Leave a review</ButtonLink>
       ) : null}

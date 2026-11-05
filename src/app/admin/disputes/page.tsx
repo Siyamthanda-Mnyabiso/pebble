@@ -9,6 +9,8 @@ import { requireAdmin } from '@/lib/admin';
 import { cn } from '@/lib/cn';
 import { formatDay } from '@/lib/dates';
 import { formatRand } from '@/lib/money';
+import { EvidenceGallery } from '@/components/booking/evidence';
+import { loadEvidence } from '@/lib/disputes';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = { title: 'Disputes' };
@@ -91,6 +93,7 @@ async function Content({
       .eq('booking_id', selected.booking_id)
       .order('created_at'),
   ]);
+  const evidence = await loadEvidence(supabase, selected.id, selected.bookings.user_id);
   const b = selected.bookings;
   const sent = (iso: string) =>
     new Intl.DateTimeFormat('en-ZA', {
@@ -169,6 +172,12 @@ async function Content({
           <p className="type-body-s text-muted mt-2">
             {selected.provider_reply ?? 'The provider has not replied yet.'}
           </p>
+          <h3 className="type-h4 mt-6">Photo evidence</h3>
+          {evidence.length === 0 ? (
+            <p className="type-body-s text-muted mt-2">No photos were added.</p>
+          ) : (
+            <EvidenceGallery items={evidence} />
+          )}
           <h3 className="type-h4 mt-6">Messages between them</h3>
           {(messages ?? []).length === 0 ? (
             <p className="type-body-s text-muted mt-2">No messages were sent.</p>

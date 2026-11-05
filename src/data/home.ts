@@ -83,7 +83,7 @@ export const steps: { icon: IconName; title: string; body: string }[] = [
   {
     icon: 'check',
     title: 'Book and relax',
-    body: 'Confirm in a few taps. Pay after the job is done, rate when you are happy.',
+    body: 'Confirm in a few taps, confirm the job when it is done, rate when you are happy.',
   },
 ];
 

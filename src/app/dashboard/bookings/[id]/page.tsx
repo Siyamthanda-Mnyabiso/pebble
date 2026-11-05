@@ -8,6 +8,7 @@ import { BookingActions } from '@/components/dashboard/booking-actions';
 import { NotLinked, providerActions } from '@/components/dashboard/booking-row';
 import { ButtonLink } from '@/components/ui/button';
 import { requireProvider, type DashboardBooking } from '@/lib/dashboard';
+import { loadEvidence } from '@/lib/disputes';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = { title: 'Booking' };
@@ -67,6 +68,9 @@ async function Content({
     .eq('id', booking.user_id)
     .maybeSingle<{ full_name: string; phone: string }>();
 
+  const evidence = disputes?.[0]
+    ? await loadEvidence(supabase, disputes[0].id, booking.user_id)
+    : [];
   const { actions, hint } = providerActions({ ...booking });
 
   return (
@@ -90,7 +94,7 @@ async function Content({
           ) : null}
           {hint ? <p className="type-body-s text-muted">{hint}</p> : null}
           {disputes?.[0] ? (
-            <DisputeSummary dispute={disputes[0]} viewer="provider" />
+            <DisputeSummary dispute={disputes[0]} viewer="provider" evidence={evidence} />
           ) : null}
         </>
       }

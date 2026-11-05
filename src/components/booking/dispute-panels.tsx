@@ -2,6 +2,12 @@
 
 import { useState, useTransition } from 'react';
 import { replyToDispute, reportIssue, setBookingStatus } from '@/app/dashboard/actions';
+import {
+  checkEvidenceFiles,
+  EvidenceGallery,
+  EvidenceUploader,
+  uploadEvidence,
+} from '@/components/booking/evidence';
 import { Button } from '@/components/ui/button';
 
 export type DisputeView = {
@@ -51,13 +57,31 @@ export function ConfirmOrReport({
 
   function report(formData: FormData) {
     setError('');
+    const photos = formData
+      .getAll('photos')
+      .filter((f): f is File => f instanceof File && f.size > 0);
+    const problem = checkEvidenceFiles(photos);
+    if (problem) {
+      setError(problem);
+      return;
+    }
     startTransition(async () => {
       const result = await reportIssue(
         bookingId,
         String(formData.get('reason') ?? ''),
         String(formData.get('details') ?? ''),
       );
-      if (!result.ok) setError(result.error);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      if (photos.length > 0) {
+        const failed = await uploadEvidence(result.disputeId, photos);
+        if (failed)
+          setError(
+            `Your report was sent, but ${failed.toLowerCase()} You can add photos from the booking page.`,
+          );
+      }
     });
   }
 
@@ -124,6 +148,21 @@ export function ConfirmOrReport({
               className="border-line-strong bg-page type-body-s w-full rounded-md border px-4 py-3"
             />
           </label>
+          <label className="block">
+            <span className="type-body-s mb-2 block font-semibold">
+              Photos (optional)
+            </span>
+            <input
+              type="file"
+              name="photos"
+              multiple
+              accept="image/jpeg,image/png,image/webp"
+              className="type-body-s block w-full"
+            />
+            <span className="type-caption text-muted mt-1 block">
+              Up to 6 photos, 5 MB each. Only you, the provider and Pebble can see them.
+            </span>
+          </label>
           <div className="flex gap-3">
             <Button type="submit" disabled={pending}>
               {pending ? 'Sending…' : 'Send report'}
@@ -152,9 +191,16 @@ export function ConfirmOrReport({
 export function DisputeSummary({
   dispute,
   viewer,
+  evidence = [],
 }: {
   dispute: DisputeView;
   viewer: 'customer' | 'provider';
+  evidence?: {
+    id: string;
+    url: string;
+    by: 'customer' | 'provider';
+    created_at: string;
+  }[];
 }) {
   const [text, setText] = useState('');
   const [error, setError] = useState('');
@@ -190,6 +236,13 @@ export function DisputeSummary({
           </div>
         ) : null}
       </dl>
+      <EvidenceGallery items={evidence} />
+      {dispute.status === 'open' ? (
+        <EvidenceUploader
+          disputeId={dispute.id}
+          added={evidence.filter((e) => e.by === viewer).length}
+        />
+      ) : null}
       {viewer === 'provider' && dispute.status === 'open' && !dispute.provider_reply ? (
         <form
           className="mt-4 flex flex-col gap-3"

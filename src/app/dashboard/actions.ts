@@ -73,7 +73,7 @@ export async function reportIssue(
   bookingId: string,
   reason: string,
   details: string,
-): Promise<StatusResult> {
+): Promise<{ ok: true; disputeId: string } | { ok: false; error: string }> {
   const user = await getUser();
   if (!user) return { ok: false, error: 'Please sign in again.' };
   if (!['not_done', 'poor_quality', 'no_show', 'other'].includes(reason)) {
@@ -84,16 +84,48 @@ export async function reportIssue(
     return { ok: false, error: 'Tell us a little more, at least a sentence.' };
   if (text.length > 2000) return { ok: false, error: 'Keep it under 2000 characters.' };
   const supabase = await createClient();
-  const { error } = await supabase.rpc('report_booking_issue', {
+  const { data, error } = await supabase.rpc('report_booking_issue', {
     p_booking: bookingId,
     p_reason: reason,
     p_details: text,
   });
-  if (error) {
+  if (error || !data) {
     return { ok: false, error: 'We could not send your report. Please try again.' };
   }
   revalidatePath('/account', 'layout');
   revalidatePath('/dashboard', 'layout');
+  return { ok: true, disputeId: data as string };
+}
+
+/** Record a photo already uploaded to the private evidence bucket against a dispute. */
+export async function addEvidence(
+  disputeId: string,
+  path: string,
+  type: string,
+  size: number,
+): Promise<StatusResult> {
+  const user = await getUser();
+  if (!user) return { ok: false, error: 'Please sign in again.' };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('add_dispute_evidence', {
+    p_dispute: disputeId,
+    p_path: path,
+    p_type: type,
+    p_size: size,
+  });
+  if (error) {
+    return {
+      ok: false,
+      error: error.message.includes('up to 6')
+        ? 'You can add up to 6 photos.'
+        : error.message.includes('decided')
+          ? 'This dispute has already been decided.'
+          : 'We could not save that photo.',
+    };
+  }
+  revalidatePath('/account', 'layout');
+  revalidatePath('/dashboard', 'layout');
+  revalidatePath('/admin', 'layout');
   return { ok: true };
 }
 
