@@ -51,8 +51,8 @@ begin
   select count(*) into n from public.category_services s join public.service_categories c on c.id = s.category_id where c.active and not c.is_legacy and s.active;
   r := r || pg_temp.chk('1 all 31 launch services active (' || n || ')', n = 31);
   select count(*) into n from public.service_categories
-    where slug in ('babysitting-childcare','beauty-personal-care','event-assistance','technology-assistance','professional-trades') and not active;
-  r := r || pg_temp.chk('1 the five future categories are present and inactive (' || n || ')', n = 5);
+    where slug in ('babysitting-childcare','event-assistance','technology-assistance','professional-trades') and not active;
+  r := r || pg_temp.chk('1 the four future categories are present and inactive (' || n || ')', n = 4);
   select (enhanced_verification and not allow_instant_booking and jsonb_array_length(requirements) = 4 and not active)::text into e
     from public.service_categories where slug = 'babysitting-childcare';
   r := r || pg_temp.chk('1 childcare: enhanced verification, no instant booking, 4 requirements, inactive', e::boolean);
@@ -168,7 +168,7 @@ begin
   r := r || pg_temp.chk('5 visitors see no inactive categories (' || n || ') and browse six (' || k || ')', n = 0 and k = 6);
   perform pg_temp.as_user(a);
   select count(*) into n from public.service_categories where not active and not is_legacy;
-  r := r || pg_temp.chk('5 admin sees the inactive categories too (' || n || ')', n = 5);
+  r := r || pg_temp.chk('5 admin sees the inactive categories too (' || n || ')', n = 4);
   perform pg_temp.as_owner();
 
   -- 6 admin: create a category, services, activation

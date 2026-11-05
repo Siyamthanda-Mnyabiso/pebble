@@ -10,6 +10,7 @@ const nav: NavItem[] = [
   { href: '/admin/bookings', label: 'Bookings', icon: 'calendar' },
   { href: '/admin/providers', label: 'Providers', icon: 'box' },
   { href: '/admin/customers', label: 'Customers', icon: 'user' },
+  { href: '/admin/categories', label: 'Categories', icon: 'sparkles' },
   { href: '/admin/disputes', label: 'Disputes', icon: 'message' },
   { href: '/admin/payments', label: 'Payments', icon: 'bolt' },
   { href: '/admin/reviews', label: 'Reviews', icon: 'star' },

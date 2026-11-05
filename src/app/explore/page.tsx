@@ -8,7 +8,8 @@ import { ProviderCard } from '@/components/home/provider-card';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { ButtonLink } from '@/components/ui/button';
 import { getSavedSlugs } from '@/lib/auth';
-import { resolveCategory } from '@/data/categories';
+import { listCategories, resolveCategory } from '@/data/categories';
+import { formatRand } from '@/lib/money';
 import {
   listProviderCities,
   searchProviders,
@@ -41,6 +42,7 @@ function parse(params: SearchParams): ProviderFilters & { limit: number } {
   return {
     q: first(params.q),
     category: first(params.category),
+    service: first(params.service),
     minRating: toNumber(first(params.minRating)),
     minPrice: toNumber(first(params.min)),
     maxPrice: toNumber(first(params.max)),
@@ -100,7 +102,12 @@ async function Results({ searchParams }: Pick<PageProps<'/explore'>, 'searchPara
   ]);
   const elsewhere = cities.filter((c) => c.city !== area);
 
-  const label = (await resolveCategory(filters.category))?.label;
+  const resolved = await resolveCategory(filters.category);
+  const category = resolved
+    ? (await listCategories()).find((c) => c.slug === resolved.slug)
+    : undefined;
+  const service = category?.services.find((x) => x.id === filters.service);
+  const label = resolved?.label;
   const title = label
     ? `${label} services in ${area}`
     : filters.q
@@ -126,11 +133,59 @@ async function Results({ searchParams }: Pick<PageProps<'/explore'>, 'searchPara
         {total} {total === 1 ? 'provider' : 'providers'} available
       </p>
 
+      {category && category.services.length > 0 ? (
+        <ServiceChips category={category} current={service?.id} raw={raw} />
+      ) : null}
+
       <div className="mt-5">
         <Suspense>
           <FilterBar total={total} />
         </Suspense>
       </div>
+
+      {service && providers.length > 0 ? (
+        <section
+          aria-label={`${service.name} prices`}
+          className="bg-page shadow-card mt-6 rounded-xl p-5 sm:p-6"
+        >
+          <h2 className="type-h3">
+            {service.name} prices in {area}
+          </h2>
+          <p className="type-caption text-muted">Prices are set by each provider.</p>
+          <ul className="divide-line mt-3 divide-y">
+            {providers.map((p) => (
+              <li
+                key={p.slug}
+                className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-3"
+              >
+                <span className="min-w-0 flex-1 basis-40">
+                  <Link
+                    href={`/providers/${p.slug}`}
+                    className="type-body-s font-semibold hover:underline"
+                  >
+                    {p.name}
+                  </Link>
+                  <span className="type-caption text-muted block">
+                    {p.verified ? 'Verified' : 'Not yet verified'}
+                    {p.availableToday ? ' · Available today' : ''}
+                  </span>
+                </span>
+                <span className="type-body-s text-muted">
+                  {p.reviewCount > 0
+                    ? `${p.rating.toFixed(1)} (${p.reviewCount})`
+                    : 'No reviews yet'}
+                </span>
+                <span className="type-body-s w-20 font-semibold">
+                  {formatRand(p.fromPrice * 100)}
+                </span>
+                <ButtonLink href={`/book/${p.slug}`} size="sm">
+                  Book
+                </ButtonLink>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {providers.length > 0 ? (
         <ul className="mt-6 grid grid-cols-1 gap-x-5 gap-y-8 min-[1500px]:grid-cols-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -172,6 +227,50 @@ async function Results({ searchParams }: Pick<PageProps<'/explore'>, 'searchPara
         </div>
       ) : null}
     </>
+  );
+}
+
+/** The services inside the chosen category, so prices compare like with like. */
+function ServiceChips({
+  category,
+  current,
+  raw,
+}: {
+  category: { services: { id: string; name: string }[] };
+  current?: string;
+  raw: SearchParams;
+}) {
+  const href = (id?: string) => {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(raw)) {
+      const v = first(value);
+      if (v && key !== 'service' && key !== 'limit') params.set(key, v);
+    }
+    if (id) params.set('service', id);
+    return `/explore?${params.toString()}`;
+  };
+  const chip = (active: boolean) =>
+    `type-body-s inline-flex h-10 items-center rounded-full px-4 whitespace-nowrap ${
+      active ? 'bg-dark text-on-dark' : 'bg-page shadow-card'
+    }`;
+  return (
+    <div className="mt-5">
+      <p className="type-caption text-muted">Choose a service to compare prices</p>
+      <ul className="mt-2 flex gap-2 overflow-x-auto pb-1">
+        <li>
+          <Link href={href()} scroll={false} className={chip(!current)}>
+            All services
+          </Link>
+        </li>
+        {category.services.map((s) => (
+          <li key={s.id}>
+            <Link href={href(s.id)} scroll={false} className={chip(current === s.id)}>
+              {s.name}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

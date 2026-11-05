@@ -110,8 +110,10 @@ insert into public.service_categories (slug, name, icon, image, sort_order, acti
   ('gardening', 'Gardening', 'leaf', '/images/gardening.jpg', 930, true, true, false, false),
   ('painting', 'Painting', 'roller', '/images/hero-painter.jpg', 940, true, true, false, false),
   ('moving', 'Moving', 'box', '/images/moving.jpg', 950, true, true, false, false),
-  ('beauty', 'Beauty', 'scissors', '/images/beauty.jpg', 960, true, true, false, false),
-  ('photography', 'Photography', 'camera', '/images/photography.jpg', 970, true, true, false, false);
+  -- Pebble does not offer beauty or photography. The rows stay only so older records remain valid;
+  -- they are switched off and closed to everyone.
+  ('beauty', 'Beauty', 'scissors', '/images/beauty.jpg', 960, false, true, false, false),
+  ('photography', 'Photography', 'camera', '/images/photography.jpg', 970, false, true, false, false);
 
 -- The six launch categories, active.
 insert into public.service_categories
@@ -133,7 +135,6 @@ insert into public.service_categories
      {"key":"references","label":"Written references from two families","kind":"reference","required":true},
      {"key":"background_screening","label":"Background screening result","kind":"screening","required":true},
      {"key":"safeguarding","label":"Child safeguarding declaration and first aid certificate","kind":"safeguarding","required":true}]'),
-  ('beauty-personal-care', 'Beauty & Personal Care', 'Hair, nails, makeup and grooming.', 'scissors', 120, false, true, false, false, false, 0, '[]'),
   ('event-assistance', 'Event Assistance', 'Setup, serving and helping hands for events.', 'calendar', 130, false, false, false, false, false, 48, '[]'),
   ('technology-assistance', 'Technology Assistance', 'Devices, Wi-Fi and software help.', 'bolt', 140, false, true, false, false, false, 0, '[]'),
   ('professional-trades', 'Professional Trades', 'Regulated trades that need a licence.', 'tap', 150, false, false, true, false, true, 0,
