@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { BookingFlow } from '@/components/booking/booking-flow';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteNav } from '@/components/layout/site-nav';
+import { getCategoryNames } from '@/data/categories';
 import { getProvider, listProviderSlugs } from '@/data/providers';
 
 export const metadata: Metadata = { title: 'Book a service' };
@@ -29,10 +30,11 @@ async function Booking({ params }: Pick<PageProps<'/book/[slug]'>, 'params'>) {
   const { slug } = await params;
   const provider = await getProvider(slug);
   if (!provider) notFound();
+  const names = await getCategoryNames();
 
   return (
     <Suspense>
-      <BookingFlow provider={provider} />
+      <BookingFlow provider={provider} categoryLabel={names[provider.category]} />
     </Suspense>
   );
 }

@@ -3,7 +3,12 @@ import { Suspense } from 'react';
 import { PageHeading } from '@/components/account/ui';
 import { NotLinked } from '@/components/dashboard/booking-row';
 import { AddServiceCard, ServiceItem } from '@/components/dashboard/forms';
-import { loadOwnServices, loadPlatformTerms, requireProvider } from '@/lib/dashboard';
+import {
+  loadOwnCategories,
+  loadOwnServices,
+  loadPlatformTerms,
+  requireProvider,
+} from '@/lib/dashboard';
 
 export const metadata: Metadata = { title: 'Services' };
 
@@ -26,10 +31,27 @@ export default function ServicesPage() {
 async function Content() {
   const { provider } = await requireProvider('/dashboard/services');
   if (!provider) return <NotLinked />;
+  const categories = await loadOwnCategories(provider.slug, provider.category);
   const [services, terms] = await Promise.all([
-    loadOwnServices(provider.slug),
+    loadOwnServices(provider.slug, categories),
     loadPlatformTerms(),
   ]);
+
+  // Providers from before the catalogue can still type a service; everyone else picks from the
+  // services of their categories that they have not added yet.
+  const legacy = categories.find((c) => c.main)?.legacy ?? false;
+  const taken = new Set(services.map((s) => s.serviceId));
+  const groups = legacy
+    ? undefined
+    : categories
+        .filter((c) => !c.legacy)
+        .map((c) => ({
+          label: c.label,
+          allowInstantBooking: c.allowInstantBooking,
+          services: c.services.filter((x) => !taken.has(x.id)),
+        }))
+        .filter((g) => g.services.length > 0);
+
   return (
     <>
       {services.length === 0 ? (
@@ -50,10 +72,18 @@ async function Content() {
           ))}
         </ul>
       )}
-      <AddServiceCard
-        commissionPercent={terms.commissionPercent}
-        paymentsEnabled={terms.paymentsEnabled}
-      />
+      {groups && groups.length === 0 ? (
+        <p className="type-body-s text-muted mt-6">
+          You have added every service in your categories. Add another category on the
+          Listing page to offer more.
+        </p>
+      ) : (
+        <AddServiceCard
+          groups={groups}
+          commissionPercent={terms.commissionPercent}
+          paymentsEnabled={terms.paymentsEnabled}
+        />
+      )}
     </>
   );
 }

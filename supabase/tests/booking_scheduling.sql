@@ -5,6 +5,8 @@ declare
   sl text; r text := ''; n int; st text; x text; b1 uuid; b2 uuid; b3 uuid; b4 uuid; b5 uuid; b6 uuid;
   d date := current_date + 3; d2 date := current_date + 4; dl timestamptz; sa timestamp := now() at time zone 'Africa/Johannesburg';
 begin
+  -- the test providers stand in for providers who joined before the category catalogue
+  update public.service_categories set open_to_new_providers = true, alias_of = null where slug in ('cleaning','plumbing');
   insert into auth.users (id, instance_id, aud, role, email) values
    (o,'00000000-0000-0000-0000-000000000000','authenticated','authenticated','p@test.invalid'),
    (c,'00000000-0000-0000-0000-000000000000','authenticated','authenticated','c@test.invalid'),

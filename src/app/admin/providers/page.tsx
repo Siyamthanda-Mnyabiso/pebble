@@ -5,7 +5,7 @@ import { PageHeading } from '@/components/account/ui';
 import { Cell, Empty, Stat, Stats, Table } from '@/components/admin/parts';
 import { StatusBadge } from '@/components/verification/status';
 import type { VerificationStatus } from '@/lib/verification';
-import { categoryLabel } from '@/data/providers';
+import { getCategoryNames } from '@/data/categories';
 import { requireAdmin, type ProviderRow } from '@/lib/admin';
 import { cn } from '@/lib/cn';
 import { createClient } from '@/lib/supabase/server';
@@ -42,7 +42,7 @@ async function List({
   const q = (typeof params.q === 'string' ? params.q : '').trim().toLowerCase();
 
   const supabase = await createClient();
-  const [{ data }, { data: done }, { data: states }] = await Promise.all([
+  const [{ data }, { data: done }, { data: states }, names] = await Promise.all([
     supabase
       .from('providers')
       .select('slug, name, category, city, area, rating, review_count, verified, active')
@@ -50,6 +50,7 @@ async function List({
       .returns<ProviderRow[]>(),
     supabase.from('bookings').select('provider_slug').eq('status', 'completed'),
     supabase.from('provider_verification').select('provider_slug, status'),
+    getCategoryNames(),
   ]);
   const state = new Map(
     (states ?? []).map((v) => [
@@ -143,7 +144,7 @@ async function List({
                     {p.name}
                   </Link>
                 </Cell>
-                <Cell>{categoryLabel(p.category)}</Cell>
+                <Cell>{names[p.category] ?? p.category}</Cell>
                 <Cell>
                   {p.area && p.area !== p.city ? `${p.area}, ${p.city}` : p.city}
                 </Cell>

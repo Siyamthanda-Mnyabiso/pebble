@@ -119,6 +119,24 @@ export function ProviderProfile({
           </Suspense>
           <section id="overview" className="scroll-mt-24">
             <p className="type-body max-w-[640px]">{provider.about}</p>
+            {provider.experience ? (
+              <>
+                <h2 className="type-h4 mt-6">Experience</h2>
+                <p className="type-body mt-1 max-w-[640px]">{provider.experience}</p>
+              </>
+            ) : null}
+            {provider.skills.length > 0 ? (
+              <ul className="mt-4 flex flex-wrap gap-2" aria-label="Skills">
+                {provider.skills.map((skill) => (
+                  <li
+                    key={skill}
+                    className="bg-subtle type-caption rounded-full px-3 py-1 font-semibold"
+                  >
+                    {skill}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
             <p className="type-body-s text-muted mt-3">{provider.replyTime}</p>
           </section>
 

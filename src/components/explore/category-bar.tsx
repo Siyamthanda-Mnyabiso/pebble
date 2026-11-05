@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import { Icon } from '@/components/icons';
-import { serviceCategories } from '@/data/home';
+import { listCategories } from '@/data/categories';
 import { cn } from '@/lib/cn';
 
 /** Category chips that stay under the header while the results scroll. */
-export function CategoryBar({ current, q }: { current?: string; q?: string }) {
+export async function CategoryBar({ current, q }: { current?: string; q?: string }) {
+  const categories = await listCategories();
   const href = (slug?: string) => {
     const params = new URLSearchParams();
     if (q) params.set('q', q);
@@ -21,7 +22,7 @@ export function CategoryBar({ current, q }: { current?: string; q?: string }) {
       <ul className="mx-auto flex max-w-[1440px] gap-1 overflow-x-auto px-4 md:px-8 lg:px-16">
         {[
           { slug: undefined, label: 'All', icon: 'sparkles' as const },
-          ...serviceCategories,
+          ...categories,
         ].map((c) => {
           const active = (c.slug ?? undefined) === (current || undefined);
           return (

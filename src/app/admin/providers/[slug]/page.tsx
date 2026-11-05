@@ -14,7 +14,7 @@ import {
   VideoReplacementPanel,
 } from '@/components/verification/media-review';
 import { Icon } from '@/components/icons';
-import { categoryLabel } from '@/data/providers';
+import { getCategoryNames } from '@/data/categories';
 import { requireAdmin } from '@/lib/admin';
 import { formatRand } from '@/lib/money';
 import { createClient } from '@/lib/supabase/server';
@@ -22,8 +22,8 @@ import {
   ADMIN_CHECKS,
   DOC_KINDS,
   EVENT_LABEL,
+  loadCategoryRequirements,
   loadVerification,
-  NEEDS_CERTIFICATE,
 } from '@/lib/verification';
 
 export const metadata: Metadata = { title: 'Review provider' };
@@ -92,6 +92,8 @@ async function Content({
     { verification, blockers, documents, events },
     { data: owner },
     { data: email },
+    required,
+    names,
   ] = await Promise.all([
     loadVerification(slug),
     supabase
@@ -100,6 +102,8 @@ async function Content({
       .eq('provider_slug', slug)
       .maybeSingle(),
     supabase.rpc('admin_owner_email', { p_slug: slug }),
+    loadCategoryRequirements(slug),
+    getCategoryNames(),
   ]);
   if (!verification) notFound();
 
@@ -124,14 +128,22 @@ async function Content({
     verification.video_path !== verification.approved_video_path;
   const locked = verification.status !== 'pending_review';
 
+  const categoryAsks = [
+    ...(required.licence ? ['a valid trade certificate or registration'] : []),
+    ...(required.business ? ['a business registration'] : []),
+    ...required.documents.map((d) => d.label.toLowerCase()),
+  ];
+  const categoryHint =
+    categoryAsks.length > 0
+      ? `Check the provider's categories are met: ${categoryAsks.join(', ')}.`
+      : 'Nothing special is required for this category.';
+
   const hints: Record<string, string> = {
     intro_video_reviewed: 'Watch the video. Is it the business, clear and appropriate?',
     portfolio_reviewed: 'Look through the photos. Is it real, recent work?',
     contact_verified: 'Phone and email look genuine and match the business.',
     business_verified: 'Name, description, services and prices are credible.',
-    category_requirements_met: NEEDS_CERTIFICATE.includes(row.category)
-      ? 'A valid trade certificate or registration for this trade.'
-      : 'Nothing special is required for this category.',
+    category_requirements_met: categoryHint,
     documents_checked: 'ID and any certificates open, are readable and match the person.',
   };
 
@@ -148,7 +160,7 @@ async function Content({
         <div>
           <h1 className="type-h1">{row.name}</h1>
           <p className="type-body-s text-muted mt-1">
-            {categoryLabel(row.category)} ·{' '}
+            {names[row.category] ?? row.category} ·{' '}
             {row.area && row.area !== row.city ? `${row.area}, ` : ''}
             {row.city}
           </p>

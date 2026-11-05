@@ -5,19 +5,6 @@ import type { IconName } from '@/components/icons';
  * queries once the database exists; the shapes here are what the UI expects.
  */
 
-export type ServiceCategory = { slug: string; label: string; icon: IconName };
-
-export const serviceCategories: ServiceCategory[] = [
-  { slug: 'cleaning', label: 'Cleaning', icon: 'spray' },
-  { slug: 'plumbing', label: 'Plumbing', icon: 'tap' },
-  { slug: 'electrical', label: 'Electrical', icon: 'bolt' },
-  { slug: 'gardening', label: 'Gardening', icon: 'leaf' },
-  { slug: 'painting', label: 'Painting', icon: 'roller' },
-  { slug: 'moving', label: 'Moving', icon: 'box' },
-  { slug: 'beauty', label: 'Beauty', icon: 'scissors' },
-  { slug: 'photography', label: 'Photography', icon: 'camera' },
-];
-
 export type ProviderSummary = {
   slug: string;
   name: string;

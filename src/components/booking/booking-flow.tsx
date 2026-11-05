@@ -73,7 +73,13 @@ function Summary({
   );
 }
 
-export function BookingFlow({ provider }: { provider: Provider }) {
+export function BookingFlow({
+  provider,
+  categoryLabel,
+}: {
+  provider: Provider;
+  categoryLabel?: string;
+}) {
   const router = useRouter();
   const params = useSearchParams();
   const requested = params.get('service');
@@ -168,7 +174,7 @@ export function BookingFlow({ provider }: { provider: Provider }) {
     });
   }
 
-  const categoryName = provider.category;
+  const categoryName = categoryLabel ?? 'service';
 
   return (
     <main className="mx-auto w-full max-w-[1100px] px-4 pt-6 pb-24 md:px-8">
@@ -247,7 +253,7 @@ export function BookingFlow({ provider }: { provider: Provider }) {
             {step === 1 ? (
               <>
                 <h1 ref={heading} tabIndex={-1} className="type-h1 outline-none">
-                  Book a {categoryName} service
+                  {categoryName === 'service' ? 'Book a service' : `Book ${categoryName}`}
                 </h1>
                 <p className="type-body-l text-muted mt-3">
                   Tell us when and where. You will not be charged yet.

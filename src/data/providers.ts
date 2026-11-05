@@ -1,4 +1,4 @@
-import { serviceCategories, type ServiceCategory } from '@/data/home';
+import { resolveCategory } from '@/data/categories';
 import { createPublicClient } from '@/lib/supabase/public';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 
@@ -35,7 +35,7 @@ export type AvailabilityDay = {
 export type Provider = {
   slug: string;
   name: string;
-  category: ServiceCategory['slug'];
+  category: string;
   tagline: string;
   about: string;
   area: string;
@@ -48,6 +48,8 @@ export type Provider = {
   image: string;
   gallery: string[];
   work: string[];
+  experience: string;
+  skills: string[];
   services: ProviderService[];
   reviews: ProviderReview[];
   availability: AvailabilityDay[];
@@ -68,6 +70,8 @@ type ProviderRow = {
   image: string;
   gallery: string[];
   work: string[];
+  experience: string;
+  skills: string[];
   reply_time: string;
   rating: number;
   review_count: number;
@@ -82,7 +86,7 @@ type ProviderRow = {
 };
 
 const COLUMNS =
-  'slug, name, category, tagline, about, area, city, distance_km, verified, image, gallery, work, reply_time, rating, review_count, sample_reviews, provider_services(id, name, detail, from_price, position)';
+  'slug, name, category, tagline, about, area, city, distance_km, verified, image, gallery, work, experience, skills, reply_time, rating, review_count, sample_reviews, provider_services(id, name, detail, from_price, position)';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = [
@@ -170,6 +174,8 @@ function toProvider(
     image: row.image,
     gallery: row.gallery,
     work: row.work,
+    experience: row.experience ?? '',
+    skills: row.skills ?? [],
     services,
     reviews,
     availability,
@@ -227,6 +233,8 @@ export type ProviderFilters = {
   city?: string;
   q?: string;
   category?: string;
+  /** A catalogue service id: only providers offering it, priced by that service. */
+  service?: string;
   minRating?: number;
   minPrice?: number;
   maxPrice?: number;
@@ -239,9 +247,26 @@ export type ProviderSearch = { providers: Provider[]; total: number };
 
 export async function searchProviders(filters: ProviderFilters): Promise<ProviderSearch> {
   const supabase = createPublicClient();
-  let query = supabase.from('providers').select(COLUMNS).eq('active', true);
+  // A category filter matches every provider who offers the category, not only those whose main
+  // category it is. A service filter keeps only that service so prices compare like with like.
+  const columns = [
+    COLUMNS,
+    filters.category ? 'provider_categories!inner(category_id)' : '',
+  ]
+    .filter(Boolean)
+    .join(', ')
+    .replace(
+      'provider_services(',
+      filters.service ? 'provider_services!inner(' : 'provider_services(',
+    );
+  let query = supabase.from('providers').select(columns).eq('active', true);
   if (filters.city) query = query.eq('city', filters.city);
-  if (filters.category) query = query.eq('category', filters.category);
+  if (filters.category) {
+    const category = await resolveCategory(filters.category);
+    if (!category) return { providers: [], total: 0 };
+    query = query.eq('provider_categories.category_id', category.id);
+  }
+  if (filters.service) query = query.eq('provider_services.service_id', filters.service);
   if (filters.minRating) query = query.gte('rating', filters.minRating);
   const { data } = await query.returns<ProviderRow[]>();
   const rows = data ?? [];
@@ -371,10 +396,6 @@ export async function listProviderSlugs(): Promise<string[]> {
     .select('slug, provider_services(id)')
     .eq('active', true);
   return (data ?? []).filter((r) => r.provider_services.length > 0).map((r) => r.slug);
-}
-
-export function categoryLabel(slug: string): string | undefined {
-  return serviceCategories.find((c) => c.slug === slug)?.label;
 }
 
 /** Cities that have at least one bookable provider, with how many. */
