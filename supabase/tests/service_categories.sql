@@ -275,9 +275,14 @@ begin
   k := pg_temp.browse_new();
   select count(*) into n from public.service_categories where slug = 'gardening-outdoor-care';
   r := r || pg_temp.chk('9 category off: hidden from browsing (' || k || ' listed) but its label still resolves for live providers', k = 6 and n = 1);
+  perform pg_temp.as_owner();
+  update public.profiles set provider_slug = null where id = o2;
+  -- (relinked right after the check)
   perform pg_temp.as_user(o2);
   e := pg_temp.fails($q$select public.create_my_listing('Late Garden Co', 'gardening-outdoor-care', 'Gardens', 'Cape Town')$q$);
   r := r || pg_temp.chk('9 category off: closed to new listings', e like '%not available%');
+  perform pg_temp.as_owner();
+  update public.profiles set provider_slug = sl2 where id = o2;
   perform pg_temp.as_owner();
   select count(*) into n from public.bookings where id in (b1, b2, b3);
   r := r || pg_temp.chk('9 category off: bookings preserved (' || n || ' of 3)', n = 3);
