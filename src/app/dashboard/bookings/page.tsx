@@ -30,7 +30,7 @@ async function Bookings() {
   const requests = bookings.filter((b) => b.status === 'pending');
   const upcoming = bookings.filter((b) => b.status === 'confirmed');
   const past = bookings
-    .filter((b) => b.status === 'completed' || b.status === 'cancelled')
+    .filter((b) => ['completed', 'cancelled', 'declined', 'expired'].includes(b.status))
     .reverse();
 
   return (

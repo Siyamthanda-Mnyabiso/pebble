@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+import { type BookingStatus, STATUS_LABEL } from '@/lib/booking-status';
 
 export function PageHeading({ title, subtitle }: { title: string; subtitle: string }) {
   return (
@@ -28,14 +29,20 @@ export function EmptyState({
   );
 }
 
-const statusStyles = {
+const statusStyles: Record<BookingStatus, string> = {
   confirmed: 'bg-dark text-on-dark border-transparent',
+  in_progress: 'bg-dark text-on-dark border-transparent',
   pending: 'border-line-strong text-ink',
+  awaiting_payment: 'border-line-strong text-ink',
+  awaiting_confirmation: 'border-line-strong text-ink',
+  disputed: 'border-line-strong text-ink',
   completed: 'border-line text-muted',
   cancelled: 'border-line text-muted',
-} as const;
+  declined: 'border-line text-muted',
+  expired: 'border-line text-muted',
+};
 
-export function StatusPill({ status }: { status: keyof typeof statusStyles }) {
+export function StatusPill({ status }: { status: BookingStatus }) {
   return (
     <span
       className={cn(
@@ -43,7 +50,7 @@ export function StatusPill({ status }: { status: keyof typeof statusStyles }) {
         statusStyles[status],
       )}
     >
-      {status}
+      {STATUS_LABEL[status]}
     </span>
   );
 }

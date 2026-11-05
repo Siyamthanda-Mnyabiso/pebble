@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { getOwnProvider } from '@/data/providers';
 import { getProfile, requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
+import type { BookingStatus } from '@/lib/booking-status';
 
 export type DashboardBooking = {
   id: string;
@@ -15,7 +16,7 @@ export type DashboardBooking = {
   address: string;
   notes: string;
   price_cents: number;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  status: BookingStatus;
 };
 
 export type Customer = { full_name: string; phone: string };

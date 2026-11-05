@@ -5,6 +5,7 @@ import { StatusPill } from '@/components/account/ui';
 import { Icon } from '@/components/icons';
 import { formatDay } from '@/lib/dates';
 import { formatRand } from '@/lib/money';
+import type { BookingStatus } from '@/lib/booking-status';
 
 export type DetailBooking = {
   id: string;
@@ -16,13 +17,13 @@ export type DetailBooking = {
   notes: string;
   price_cents: number;
   fee_cents: number;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  status: BookingStatus;
   created_at: string;
 };
 
 export type DetailEvent = {
   id: string;
-  kind: 'requested' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled';
+  kind: BookingStatus | 'requested' | 'rescheduled';
   detail: string;
   created_at: string;
 };
@@ -33,6 +34,13 @@ const EVENT_LABEL: Record<DetailEvent['kind'], string> = {
   completed: 'Job completed',
   cancelled: 'Booking cancelled',
   rescheduled: 'Rescheduled',
+  pending: 'Booking requested',
+  awaiting_payment: 'Accepted, awaiting payment',
+  in_progress: 'Job started',
+  awaiting_confirmation: 'Marked finished, awaiting your confirmation',
+  declined: 'Request declined',
+  expired: 'Request expired',
+  disputed: 'A problem was reported',
 };
 
 function when(iso: string) {

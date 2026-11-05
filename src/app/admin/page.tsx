@@ -7,6 +7,7 @@ import { loadStats, requireAdmin } from '@/lib/admin';
 import { formatDay } from '@/lib/dates';
 import { formatRand } from '@/lib/money';
 import { createClient } from '@/lib/supabase/server';
+import { type BookingStatus, STATUS_TONE } from '@/lib/booking-status';
 
 export default function AdminPage() {
   return (
@@ -29,17 +30,12 @@ type Recent = {
   id: string;
   reference: string;
   service: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  status: BookingStatus;
   scheduled_date: string;
   price_cents: number;
 };
 
-const statusTone = {
-  pending: 'grey',
-  confirmed: 'blue',
-  completed: 'green',
-  cancelled: 'red',
-} as const;
+const statusTone = STATUS_TONE;
 
 async function Overview() {
   await requireAdmin('/admin');

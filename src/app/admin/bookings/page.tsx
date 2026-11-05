@@ -8,16 +8,22 @@ import { cn } from '@/lib/cn';
 import { formatDay } from '@/lib/dates';
 import { formatRand } from '@/lib/money';
 import { createClient } from '@/lib/supabase/server';
+import { STATUS_TONE } from '@/lib/booking-status';
 
 export const metadata: Metadata = { title: 'Bookings' };
 
-const statuses = ['all', 'pending', 'confirmed', 'completed', 'cancelled'] as const;
-const tone = {
-  pending: 'grey',
-  confirmed: 'blue',
-  completed: 'green',
-  cancelled: 'red',
-} as const;
+const statuses = [
+  'all',
+  'pending',
+  'awaiting_payment',
+  'confirmed',
+  'completed',
+  'cancelled',
+  'declined',
+  'expired',
+  'disputed',
+] as const;
+const tone = STATUS_TONE;
 
 type Row = {
   id: string;

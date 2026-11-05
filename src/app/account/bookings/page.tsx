@@ -10,6 +10,7 @@ import { getProviderLite } from '@/data/providers';
 import { requireUser } from '@/lib/auth';
 import { formatDay, todayInSA } from '@/lib/dates';
 import { createClient } from '@/lib/supabase/server';
+import type { BookingStatus } from '@/lib/booking-status';
 
 export const metadata: Metadata = { title: 'Your bookings' };
 
@@ -20,7 +21,7 @@ type BookingRow = {
   scheduled_date: string;
   start_time: string;
   address: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  status: BookingStatus;
 };
 
 export default function BookingsPage() {
