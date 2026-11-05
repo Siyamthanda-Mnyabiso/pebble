@@ -75,7 +75,7 @@ async function Overview() {
         <Stat label="Active providers" value={stats.providers_active} />
         <Stat label="Customers" value={stats.customers} />
         <Stat
-          label="Platform fees earned"
+          label="Pebble commission earned"
           value={formatRand(stats.fees_cents)}
           hint="From completed jobs"
         />

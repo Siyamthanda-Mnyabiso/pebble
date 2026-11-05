@@ -1,6 +1,11 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
+import {
+  ConfirmOrReport,
+  DisputeSummary,
+  type DisputeView,
+} from '@/components/booking/dispute-panels';
 import { BookingDetail } from '@/components/booking/booking-detail';
 import type { DetailBooking, DetailEvent } from '@/components/booking/booking-detail';
 import { RescheduleForm } from '@/components/booking/reschedule-form';
@@ -9,6 +14,7 @@ import { ButtonLink } from '@/components/ui/button';
 import { getProvider, getProviderLite } from '@/data/providers';
 import { requireUser } from '@/lib/auth';
 import { todayInSA } from '@/lib/dates';
+import { loadEvidence } from '@/lib/disputes';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = { title: 'Booking' };
@@ -34,27 +40,45 @@ async function Content({
   const user = await requireUser(`/account/bookings/${id}`);
   const supabase = await createClient();
 
-  const [{ data: booking }, { data: events }, { data: review }] = await Promise.all([
-    supabase
-      .from('bookings')
-      .select(
-        'id, reference, provider_slug, service, scheduled_date, start_time, address, notes, price_cents, status, created_at',
-      )
-      .eq('id', id)
-      .eq('user_id', user.id)
-      .maybeSingle<DetailBooking & { provider_slug: string }>(),
-    supabase
-      .from('booking_events')
-      .select('id, kind, detail, created_at')
-      .eq('booking_id', id)
-      .order('created_at', { ascending: true })
-      .returns<DetailEvent[]>(),
-    supabase.from('reviews').select('id').eq('booking_id', id).maybeSingle(),
-  ]);
+  const [{ data: booking }, { data: events }, { data: review }, { data: disputes }] =
+    await Promise.all([
+      supabase
+        .from('bookings')
+        .select(
+          'id, reference, provider_slug, service, scheduled_date, start_time, address, notes, price_cents, status, created_at, confirm_by',
+        )
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .maybeSingle<
+          DetailBooking & { provider_slug: string; confirm_by: string | null }
+        >(),
+      supabase
+        .from('booking_events')
+        .select('id, kind, detail, created_at')
+        .eq('booking_id', id)
+        .order('created_at', { ascending: true })
+        .returns<DetailEvent[]>(),
+      supabase.from('reviews').select('id').eq('booking_id', id).maybeSingle(),
+      supabase
+        .from('disputes')
+        .select(
+          'id, reason, details, provider_reply, status, decision, decision_note, refund_cents, created_at',
+        )
+        .eq('booking_id', id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .returns<DisputeView[]>(),
+    ]);
   if (!booking) notFound();
 
+  const evidence = disputes?.[0]
+    ? await loadEvidence(supabase, disputes[0].id, user.id)
+    : [];
   const today = todayInSA();
-  const active = booking.status === 'pending' || booking.status === 'confirmed';
+  const active =
+    booking.status === 'pending' ||
+    booking.status === 'awaiting_payment' ||
+    booking.status === 'confirmed';
   const upcoming = active && booking.scheduled_date >= today;
   const provider = upcoming
     ? await getProvider(booking.provider_slug)
@@ -77,8 +101,14 @@ async function Content({
       {upcoming ? (
         <BookingActions
           bookingId={booking.id}
-          actions={[{ label: 'Cancel booking', status: 'cancelled', danger: true }]}
+          actions={[{ label: 'Cancel booking', move: 'cancel', danger: true }]}
         />
+      ) : null}
+      {booking.status === 'awaiting_confirmation' ? (
+        <ConfirmOrReport bookingId={booking.id} confirmBy={booking.confirm_by} />
+      ) : null}
+      {disputes?.[0] ? (
+        <DisputeSummary dispute={disputes[0]} viewer="customer" evidence={evidence} />
       ) : null}
       {booking.status === 'completed' && !review ? (
         <ButtonLink href="/account/reviews">Leave a review</ButtonLink>

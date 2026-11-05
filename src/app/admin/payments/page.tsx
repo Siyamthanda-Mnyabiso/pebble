@@ -27,7 +27,7 @@ export default function Page() {
     <>
       <PageHeading
         title="Payments"
-        subtitle="Platform fees and provider payout requests."
+        subtitle="Pebble commission and provider payout requests."
       />
       <Suspense fallback={<div className="bg-subtle mt-8 h-96 rounded-lg" aria-hidden />}>
         <Content />
@@ -65,7 +65,7 @@ async function Content() {
     <>
       <Stats>
         <Stat label="Completed job volume" value={formatRand(stats.volume_cents)} />
-        <Stat label="Platform fees" value={formatRand(stats.fees_cents)} />
+        <Stat label="Pebble commission" value={formatRand(stats.fees_cents)} />
         <Stat
           label="Payouts waiting"
           value={formatRand(stats.pending_payout_cents)}

@@ -17,7 +17,18 @@ export type DashboardBooking = {
   notes: string;
   price_cents: number;
   status: BookingStatus;
+  expires_at: string | null;
+  duration_minutes: number;
+  booking_mode: 'instant' | 'request';
+  commission_cents: number;
+  earning_cents: number;
+  payment_status: string;
+  payout_status: PayoutStatus;
+  confirm_by: string | null;
 };
+
+export type PayoutStatus =
+  'none' | 'held' | 'eligible' | 'on_hold' | 'processing' | 'paid' | 'failed';
 
 export type Customer = { full_name: string; phone: string };
 
@@ -38,7 +49,7 @@ export async function loadBookings(slug: string) {
   const { data } = await supabase
     .from('bookings')
     .select(
-      'id, reference, user_id, service, scheduled_date, start_time, address, notes, price_cents, status',
+      'id, reference, user_id, service, scheduled_date, start_time, address, notes, price_cents, status, expires_at, duration_minutes, booking_mode, commission_cents, earning_cents, payment_status, payout_status, confirm_by',
     )
     .eq('provider_slug', slug)
     .order('scheduled_date', { ascending: true })
@@ -74,4 +85,63 @@ export async function loadSchedule(slug: string, from: string) {
   const byDay: Record<number, string[]> = {};
   for (const h of hours.data ?? []) byDay[h.weekday] = h.times;
   return { hours: byDay, off: (off.data ?? []).map((o) => o.day as string) };
+}
+
+export type OwnService = {
+  id: string;
+  name: string;
+  detail: string;
+  fromPrice: number;
+  durationMinutes: number;
+  active: boolean;
+  instantBooking: boolean;
+};
+
+/** The provider's own services, including ones switched off. */
+export async function loadOwnServices(slug: string): Promise<OwnService[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('provider_services')
+    .select('id, name, detail, from_price, duration_minutes, active, instant_booking')
+    .eq('provider_slug', slug)
+    .order('position');
+  return (data ?? []).map((s) => ({
+    id: s.id,
+    name: s.name,
+    detail: s.detail,
+    fromPrice: s.from_price,
+    durationMinutes: s.duration_minutes,
+    active: s.active,
+    instantBooking: s.instant_booking,
+  }));
+}
+
+/** Gap between jobs and the most jobs in a day. */
+export async function loadPreferences(slug: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('provider_booking_settings')
+    .select('buffer_minutes, max_daily_bookings')
+    .eq('provider_slug', slug)
+    .maybeSingle();
+  return {
+    bufferMinutes: data?.buffer_minutes ?? 0,
+    maxDaily: data?.max_daily_bookings ?? null,
+  };
+}
+
+export type PlatformTerms = {
+  commissionPercent: number;
+  paymentsEnabled: boolean;
+};
+
+/** What every provider is allowed to know: the commission and whether payments are live. */
+export async function loadPlatformTerms(): Promise<PlatformTerms> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc('public_booking_settings');
+  const s = (data ?? {}) as Record<string, number>;
+  return {
+    commissionPercent: Number(s.commission_percent ?? 10),
+    paymentsEnabled: Number(s.payments_enabled ?? 0) === 1,
+  };
 }

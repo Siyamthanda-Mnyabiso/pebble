@@ -101,7 +101,7 @@ export const infoPages: Record<string, InfoContent> = {
           },
           {
             title: 'When do I pay?',
-            text: 'You pay after the job is done. Payments are not switched on in this preview.',
+            text: "You pay the provider's listed price and nothing on top. Payments are not switched on in this preview, so you are not charged yet.",
           },
           {
             title: 'Can I change or cancel a booking?',

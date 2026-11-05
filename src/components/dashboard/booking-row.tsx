@@ -3,6 +3,17 @@ import { StatusPill } from '@/components/account/ui';
 import { Icon } from '@/components/icons';
 import type { Customer, DashboardBooking } from '@/lib/dashboard';
 import { formatDay, todayInSA } from '@/lib/dates';
+
+function formatDeadline(iso: string) {
+  return new Intl.DateTimeFormat('en-ZA', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Africa/Johannesburg',
+  }).format(new Date(iso));
+}
 import { formatRand } from '@/lib/money';
 import { BookingActions } from './booking-actions';
 import { CreateListingForm } from './forms';
@@ -16,15 +27,24 @@ export function providerActions(booking: DashboardBooking) {
   let hint = '';
 
   if (booking.status === 'pending') {
-    actions.push({ label: 'Accept', status: 'confirmed' });
-    actions.push({ label: 'Decline', status: 'cancelled', danger: true });
-  } else if (booking.status === 'confirmed') {
+    actions.push({ label: 'Accept', move: 'accept' });
+    actions.push({ label: 'Decline', move: 'decline', danger: true });
+  } else if (booking.status === 'awaiting_payment') {
+    hint = 'Waiting for the customer to pay';
+    actions.push({ label: 'Cancel', move: 'cancel', danger: true });
+  } else if (booking.status === 'confirmed' || booking.status === 'in_progress') {
     if (booking.scheduled_date <= today) {
-      actions.push({ label: 'Mark complete', status: 'completed' });
+      actions.push({ label: 'Mark job done', move: 'done' });
     } else {
-      hint = `Complete it on ${formatDay(booking.scheduled_date)}`;
+      hint = `You can mark it done on ${formatDay(booking.scheduled_date)}`;
     }
-    actions.push({ label: 'Cancel', status: 'cancelled', danger: true });
+    if (booking.status === 'confirmed') {
+      actions.push({ label: 'Cancel', move: 'cancel', danger: true });
+    }
+  } else if (booking.status === 'awaiting_confirmation') {
+    hint = 'Waiting for the customer to confirm';
+  } else if (booking.status === 'disputed') {
+    hint = 'The customer reported a problem. Open the booking to reply.';
   }
   return { actions, hint };
 }
@@ -68,7 +88,18 @@ export function BookingRow({
         {booking.notes ? (
           <p className="type-body-s text-muted mt-1">Note: {booking.notes}</p>
         ) : null}
-        <p className="type-caption text-muted mt-1">Ref {booking.reference}</p>
+        <p className="type-caption text-muted mt-1">
+          Ref {booking.reference}
+          {booking.status === 'pending' && booking.expires_at ? (
+            <> · Reply by {formatDeadline(booking.expires_at)}</>
+          ) : null}
+        </p>
+        {booking.status !== 'pending' || booking.price_cents ? (
+          <p className="type-caption text-muted mt-0.5">
+            You receive {formatRand(booking.earning_cents)} after{' '}
+            {formatRand(booking.commission_cents)} commission
+          </p>
+        ) : null}
       </div>
       <div className="flex flex-col items-end gap-3">
         <StatusPill status={booking.status} />
