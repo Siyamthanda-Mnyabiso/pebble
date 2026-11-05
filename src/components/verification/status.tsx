@@ -4,9 +4,9 @@ import { STATUS_META, type VerificationStatus } from '@/lib/verification';
 
 const tone = {
   grey: 'bg-subtle text-muted',
-  blue: 'bg-[#e3f0fb] text-[#1a5a96]',
-  green: 'bg-[#e6f4ea] text-[#1e6b36]',
-  red: 'bg-[#fde8e6] text-[#b3261e]',
+  blue: 'bg-subtle text-muted',
+  green: 'bg-subtle text-muted',
+  red: 'bg-subtle text-muted',
 } as const;
 
 export function StatusBadge({ status }: { status: VerificationStatus }) {

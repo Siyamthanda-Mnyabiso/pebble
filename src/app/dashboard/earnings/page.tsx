@@ -20,7 +20,7 @@ export default function EarningsPage() {
     <>
       <PageHeading
         title="Earnings"
-        subtitle="What customers paid, Pebble commission and what you take home."
+        subtitle="Job prices, Pebble commission and what you take home."
       />
       <Suspense
         fallback={<div className="bg-subtle mt-10 h-64 rounded-lg" aria-hidden />}
@@ -82,7 +82,10 @@ async function Earnings() {
           { label: 'Gross revenue', value: formatRand(Number(sum.gross_cents ?? 0)) },
           {
             label: `Pebble commission (${terms.commissionPercent}%)`,
-            value: `-${formatRand(Number(sum.commission_cents ?? 0))}`,
+            value:
+              Number(sum.commission_cents ?? 0) > 0
+                ? `-${formatRand(Number(sum.commission_cents))}`
+                : formatRand(0),
           },
           { label: 'Net earnings', value: formatRand(Number(sum.net_cents ?? 0)) },
           { label: 'Completed jobs', value: String(sum.completed_jobs ?? 0) },
@@ -98,9 +101,9 @@ async function Earnings() {
         ))}
       </ul>
       <p className="type-caption text-muted mt-4">
-        Gross is what customers paid. Pebble takes {terms.commissionPercent}% of each
-        price and you keep the rest. Payment processing fees are Pebble&apos;s cost and
-        never reduce your earnings.
+        Gross is the price of your completed jobs. Pebble takes {terms.commissionPercent}%
+        of each price and you keep the rest. Payment processing fees are Pebble&apos;s
+        cost and never reduce your earnings.
         {awaiting > 0
           ? ` ${formatRand(awaiting)} more is waiting for customers to confirm their jobs.`
           : ''}
@@ -188,7 +191,7 @@ async function Earnings() {
                     </span>
                   </span>
                   <span className="type-caption text-muted text-right">
-                    Customer paid {formatRand(b.price_cents)}
+                    Job price {formatRand(b.price_cents)}
                     <br />
                     Commission -{formatRand(b.commission_cents)}
                     <br />

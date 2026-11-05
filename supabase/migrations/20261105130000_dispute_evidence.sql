@@ -85,7 +85,7 @@ declare
   uid uuid := (select auth.uid());
   d public.disputes;
   n integer;
-  id uuid;
+  new_id uuid;
 begin
   select * into d from public.disputes where id = p_dispute;
   if not found or not public.is_dispute_party(p_dispute) then raise exception 'Dispute not found'; end if;
@@ -103,10 +103,10 @@ begin
   if n >= 6 then raise exception 'You can add up to 6 photos'; end if;
   insert into public.dispute_evidence (dispute_id, uploaded_by, path, content_type, size_bytes)
   values (p_dispute, uid, p_path, p_type, p_size)
-  returning dispute_evidence.id into id;
+  returning dispute_evidence.id into new_id;
   insert into public.booking_events (booking_id, kind, detail)
   values (d.booking_id, 'dispute_reply', 'A photo was added as evidence');
-  return id;
+  return new_id;
 end;
 $$;
 

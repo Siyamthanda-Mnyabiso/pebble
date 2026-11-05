@@ -29,6 +29,11 @@ async function Bookings() {
   const { bookings, customers } = await loadBookings(provider.slug);
   const requests = bookings.filter((b) => b.status === 'pending');
   const upcoming = bookings.filter((b) => b.status === 'confirmed');
+  const active = bookings.filter((b) =>
+    ['in_progress', 'awaiting_confirmation', 'disputed', 'awaiting_payment'].includes(
+      b.status,
+    ),
+  );
   const past = bookings
     .filter((b) => ['completed', 'cancelled', 'declined', 'expired'].includes(b.status))
     .reverse();
@@ -47,6 +52,14 @@ async function Bookings() {
         bookings={upcoming}
         customers={customers}
       />
+      {active.length > 0 && (
+        <BookingList
+          title="In progress and waiting"
+          empty=""
+          bookings={active}
+          customers={customers}
+        />
+      )}
       <BookingList
         title="Past"
         empty="No completed or cancelled jobs yet."

@@ -17,6 +17,8 @@ const statuses = [
   'pending',
   'awaiting_payment',
   'confirmed',
+  'in_progress',
+  'awaiting_confirmation',
   'completed',
   'cancelled',
   'declined',
@@ -88,7 +90,7 @@ async function List({
     <>
       <nav
         aria-label="Filter bookings"
-        className="bg-subtle mt-8 inline-flex flex-wrap rounded-full p-1"
+        className="bg-subtle mt-8 inline-flex flex-wrap rounded-3xl p-1"
       >
         {statuses.map((s) => (
           <Link
@@ -100,7 +102,7 @@ async function List({
               status === s ? 'bg-dark text-on-dark' : 'text-muted',
             )}
           >
-            {s}
+            {s.replace(/_/g, ' ')}
           </Link>
         ))}
       </nav>

@@ -14,8 +14,9 @@ const OPTIONS = [
 
 /** The admin's decision. It records the outcome and tells both people. No money moves from here. */
 export function DisputeDecision({ id, priceCents }: { id: string; priceCents: number }) {
-  const [decision, setDecision] =
-    useState<(typeof OPTIONS)[number]['value']>('release_payout');
+  const [decision, setDecision] = useState<(typeof OPTIONS)[number]['value'] | null>(
+    null,
+  );
   const [note, setNote] = useState('');
   const [refund, setRefund] = useState('');
   const [error, setError] = useState('');
@@ -23,6 +24,10 @@ export function DisputeDecision({ id, priceCents }: { id: string; priceCents: nu
 
   function submit() {
     setError('');
+    if (!decision) {
+      setError('Choose a decision first.');
+      return;
+    }
     startTransition(async () => {
       const result = await decideDispute(id, decision, note, Number(refund));
       if (!result.ok) setError(result.error);
