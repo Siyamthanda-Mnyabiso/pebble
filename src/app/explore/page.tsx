@@ -153,36 +153,38 @@ async function Results({ searchParams }: Pick<PageProps<'/explore'>, 'searchPara
           </h2>
           <p className="type-caption text-muted">Prices are set by each provider.</p>
           <ul className="divide-line mt-3 divide-y">
-            {providers.map((p) => (
-              <li
-                key={p.slug}
-                className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-3"
-              >
-                <span className="min-w-0 flex-1 basis-40">
-                  <Link
-                    href={`/providers/${p.slug}`}
-                    className="type-body-s font-semibold hover:underline"
-                  >
-                    {p.name}
-                  </Link>
-                  <span className="type-caption text-muted block">
-                    {p.verified ? 'Verified' : 'Not yet verified'}
-                    {p.availableToday ? ' · Available today' : ''}
+            {[...providers]
+              .sort((a, b) => a.fromPrice - b.fromPrice)
+              .map((p) => (
+                <li
+                  key={p.slug}
+                  className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-3"
+                >
+                  <span className="min-w-0 flex-1 basis-40">
+                    <Link
+                      href={`/providers/${p.slug}`}
+                      className="type-body-s font-semibold hover:underline"
+                    >
+                      {p.name}
+                    </Link>
+                    <span className="type-caption text-muted block">
+                      {p.verified ? 'Verified' : 'Not yet verified'}
+                      {p.availableToday ? ' · Available today' : ''}
+                    </span>
                   </span>
-                </span>
-                <span className="type-body-s text-muted">
-                  {p.reviewCount > 0
-                    ? `${p.rating.toFixed(1)} (${p.reviewCount})`
-                    : 'No reviews yet'}
-                </span>
-                <span className="type-body-s w-20 font-semibold">
-                  {formatRand(p.fromPrice * 100)}
-                </span>
-                <ButtonLink href={`/book/${p.slug}`} size="sm">
-                  Book
-                </ButtonLink>
-              </li>
-            ))}
+                  <span className="type-body-s text-muted">
+                    {p.reviewCount > 0
+                      ? `${p.rating.toFixed(1)} (${p.reviewCount})`
+                      : 'No reviews yet'}
+                  </span>
+                  <span className="type-body-s w-20 font-semibold">
+                    {formatRand(p.fromPrice * 100)}
+                  </span>
+                  <ButtonLink href={`/book/${p.slug}`} size="sm">
+                    Book
+                  </ButtonLink>
+                </li>
+              ))}
           </ul>
         </section>
       ) : null}

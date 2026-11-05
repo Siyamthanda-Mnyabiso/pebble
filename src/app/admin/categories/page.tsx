@@ -32,7 +32,8 @@ async function List({
 }: Pick<PageProps<'/admin/categories'>, 'searchParams'>) {
   await requireAdmin('/admin/categories');
   const params = await searchParams;
-  const view = params.view === 'active' || params.view === 'inactive' ? params.view : 'all';
+  const view =
+    params.view === 'active' || params.view === 'inactive' ? params.view : 'all';
   const showOld = params.old === '1';
 
   const everything = await loadAdminCategories();

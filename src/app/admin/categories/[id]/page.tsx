@@ -6,7 +6,6 @@ import { PageHeading } from '@/components/account/ui';
 import { CategoryEditor } from '@/components/admin/category-editor';
 import { requireAdmin } from '@/lib/admin';
 import { loadAdminCategories } from '@/lib/admin-categories';
-import { formatDay } from '@/lib/dates';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = { title: 'Edit category' };
@@ -66,7 +65,14 @@ async function Content({ params }: Pick<PageProps<'/admin/categories/[id]'>, 'pa
       (typeof e.detail?.name === 'string' && e.kind.startsWith('service')
         ? `: ${e.detail.name}`
         : ''),
-    when: `${formatDay(e.created_at.slice(0, 10))}, ${e.created_at.slice(11, 16)}`,
+    when: new Intl.DateTimeFormat('en-ZA', {
+      timeZone: 'Africa/Johannesburg',
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(new Date(e.created_at)),
   }));
 
   return (

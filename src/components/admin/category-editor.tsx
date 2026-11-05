@@ -15,7 +15,8 @@ import type { AdminCategory } from '@/lib/admin-categories';
 
 type Event = { id: string; text: string; when: string };
 
-const input = 'border-line-strong bg-page type-body-s h-[52px] w-full rounded-md border px-4';
+const input =
+  'border-line-strong bg-page type-body-s h-[52px] w-full rounded-md border px-4';
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -96,195 +97,212 @@ export function CategoryEditor({
   }
 
   return (
-    <div className="mt-8 grid items-start gap-6 lg:grid-cols-[1fr_340px]">
-      <form action={submit} className="flex flex-col gap-6">
-        <Card title="Details">
-          <label className="block">
-            <span className="type-body-s mb-2 block font-semibold">Name</span>
-            <input
-              name="name"
-              required
-              minLength={2}
-              maxLength={60}
-              defaultValue={category?.name ?? ''}
-              className={input}
-            />
-          </label>
-          <label className="block">
-            <span className="type-body-s mb-2 block font-semibold">Description</span>
-            <input
-              name="description"
-              maxLength={300}
-              defaultValue={category?.description ?? ''}
-              className={input}
-            />
-          </label>
-          <div className="grid gap-4 sm:grid-cols-2">
+    <div className="mt-8">
+      {error ? (
+        <p
+          role="alert"
+          className="bg-subtle type-body-s text-danger mb-6 rounded-lg px-5 py-3"
+        >
+          {error}
+        </p>
+      ) : null}
+      <div className="grid items-start gap-6 lg:grid-cols-[1fr_340px]">
+        <form action={submit} className="flex flex-col gap-6">
+          <Card title="Details">
             <label className="block">
-              <span className="type-body-s mb-2 block font-semibold">Icon</span>
-              <input name="icon" defaultValue={category?.icon ?? 'sparkles'} className={input} />
-            </label>
-            <label className="block">
-              <span className="type-body-s mb-2 block font-semibold">Order in lists</span>
+              <span className="type-body-s mb-2 block font-semibold">Name</span>
               <input
-                name="sort_order"
-                type="number"
-                min={0}
-                defaultValue={category?.sort_order ?? 200}
-                className={input}
-              />
-            </label>
-          </div>
-        </Card>
-
-        <Card title="Booking rules">
-          <Switch
-            name="allow_instant_booking"
-            label="Instant booking permitted"
-            help="When off, providers in this category approve every request themselves. The database enforces it."
-            defaultChecked={category?.allow_instant_booking ?? true}
-          />
-          <Switch
-            name="requires_licence"
-            label="Requires a licence or registration"
-            help="Providers must upload a trade licence or registration before approval."
-            defaultChecked={category?.requires_licence ?? false}
-          />
-          <Switch
-            name="enhanced_verification"
-            label="Enhanced verification"
-            help="Extra identity, reference and screening checks. Used for childcare."
-            defaultChecked={category?.enhanced_verification ?? false}
-          />
-          <Switch
-            name="requires_business_registration"
-            label="Requires business registration"
-            help="Only switch on where the law needs it. Providers do not need a business by default."
-            defaultChecked={category?.requires_business_registration ?? false}
-          />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="type-body-s mb-2 block font-semibold">
-                Minimum notice (hours)
-              </span>
-              <input
-                name="min_notice_hours"
-                type="number"
-                min={0}
-                max={720}
-                defaultValue={category?.min_notice_hours ?? 0}
+                name="name"
+                required
+                minLength={2}
+                maxLength={60}
+                defaultValue={category?.name ?? ''}
                 className={input}
               />
             </label>
             <label className="block">
-              <span className="type-body-s mb-2 block font-semibold">
-                Longest job (minutes)
-              </span>
+              <span className="type-body-s mb-2 block font-semibold">Description</span>
               <input
-                name="max_duration_minutes"
-                type="number"
-                min={15}
-                max={720}
-                placeholder="No limit"
-                defaultValue={category?.max_duration_minutes ?? ''}
+                name="description"
+                maxLength={300}
+                defaultValue={category?.description ?? ''}
                 className={input}
               />
             </label>
-          </div>
-        </Card>
-
-        <Card title="Extra verification documents">
-          <p className="type-body-s text-muted -mt-2">
-            Providers must upload these before the listing can be approved. ID is always
-            required. One per line: name | type (id, business, certification, reference,
-            screening, safeguarding, qualification). Add | optional to make one optional.
-          </p>
-          <label className="block">
-            <span className="sr-only">Extra documents</span>
-            <textarea
-              name="requirements"
-              rows={4}
-              defaultValue={requirementsText(category)}
-              placeholder="Reference letter | reference"
-              className="border-line-strong bg-page type-body-s w-full rounded-md border p-4"
-            />
-          </label>
-        </Card>
-
-        {error ? (
-          <p role="alert" className="type-body-s text-danger">
-            {error}
-          </p>
-        ) : null}
-        <div className="flex items-center gap-3">
-          <Button type="submit" disabled={pending}>
-            {pending ? 'Saving…' : category ? 'Save changes' : 'Create category'}
-          </Button>
-          {saved ? <span className="type-body-s text-muted">Saved.</span> : null}
-        </div>
-      </form>
-
-      {category ? (
-        <aside className="flex flex-col gap-6">
-          <Card title="Status">
-            <div className="flex items-center justify-between gap-4">
-              <Pill tone={category.active ? 'green' : 'grey'}>
-                {category.active ? 'Active' : 'Inactive'}
-              </Pill>
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={pending}
-                onClick={() => run(() => setCategoryActive(category.id, !category.active))}
-              >
-                {category.active ? 'Turn off' : 'Turn on'}
-              </Button>
-            </div>
-            <p className="type-caption text-muted">
-              Turning a category off hides it from browsing and new sign ups. Existing
-              providers, services and bookings stay exactly as they are.
-            </p>
-            <p className="type-caption text-muted">
-              {category.providers_total} providers, {category.providers_live} live
-            </p>
-          </Card>
-
-          <Card title="Services">
-            <ul className="flex flex-col gap-3">
-              {category.services.map((s) => (
-                <ServiceRow
-                  key={s.id}
-                  service={s}
-                  categoryId={category.id}
-                  busy={pending}
-                  run={run}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="type-body-s mb-2 block font-semibold">Icon</span>
+                <input
+                  name="icon"
+                  defaultValue={category?.icon ?? 'sparkles'}
+                  className={input}
                 />
-              ))}
-            </ul>
-            <AddService categoryId={category.id} busy={pending} run={run} />
+              </label>
+              <label className="block">
+                <span className="type-body-s mb-2 block font-semibold">
+                  Order in lists
+                </span>
+                <input
+                  name="sort_order"
+                  type="number"
+                  min={0}
+                  defaultValue={category?.sort_order ?? 200}
+                  className={input}
+                />
+              </label>
+            </div>
           </Card>
 
-          <Card title="Change history">
-            {history.length === 0 ? (
-              <p className="type-body-s text-muted">No changes yet.</p>
-            ) : (
+          <Card title="Booking rules">
+            <Switch
+              name="allow_instant_booking"
+              label="Instant booking permitted"
+              help="When off, providers in this category approve every request themselves. The database enforces it."
+              defaultChecked={category?.allow_instant_booking ?? true}
+            />
+            <Switch
+              name="requires_licence"
+              label="Requires a licence or registration"
+              help="Providers must upload a trade licence or registration before approval."
+              defaultChecked={category?.requires_licence ?? false}
+            />
+            <Switch
+              name="enhanced_verification"
+              label="Enhanced verification"
+              help="Extra identity, reference and screening checks. Used for childcare."
+              defaultChecked={category?.enhanced_verification ?? false}
+            />
+            <Switch
+              name="requires_business_registration"
+              label="Requires business registration"
+              help="Only switch on where the law needs it. Providers do not need a business by default."
+              defaultChecked={category?.requires_business_registration ?? false}
+            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="type-body-s mb-2 block font-semibold">
+                  Minimum notice (hours)
+                </span>
+                <input
+                  name="min_notice_hours"
+                  type="number"
+                  min={0}
+                  max={720}
+                  defaultValue={category?.min_notice_hours ?? 0}
+                  className={input}
+                />
+              </label>
+              <label className="block">
+                <span className="type-body-s mb-2 block font-semibold">
+                  Longest job (minutes)
+                </span>
+                <input
+                  name="max_duration_minutes"
+                  type="number"
+                  min={15}
+                  max={720}
+                  placeholder="No limit"
+                  defaultValue={category?.max_duration_minutes ?? ''}
+                  className={input}
+                />
+              </label>
+            </div>
+          </Card>
+
+          <Card title="Extra verification documents">
+            <p className="type-body-s text-muted -mt-2">
+              Providers must upload these before the listing can be approved. ID is always
+              required. One per line: name | type (id, business, certification, reference,
+              screening, safeguarding, qualification). Add | optional to make one
+              optional.
+            </p>
+            <label className="block">
+              <span className="sr-only">Extra documents</span>
+              <textarea
+                name="requirements"
+                rows={4}
+                defaultValue={requirementsText(category)}
+                placeholder="Reference letter | reference"
+                className="border-line-strong bg-page type-body-s w-full rounded-md border p-4"
+              />
+            </label>
+          </Card>
+
+          <div className="flex items-center gap-3">
+            <Button type="submit" disabled={pending}>
+              {pending ? 'Saving…' : category ? 'Save changes' : 'Create category'}
+            </Button>
+            {saved ? <span className="type-body-s text-muted">Saved.</span> : null}
+          </div>
+        </form>
+
+        {category ? (
+          <aside className="flex flex-col gap-6">
+            <Card title="Status">
+              <div className="flex items-center justify-between gap-4">
+                <Pill tone={category.active ? 'green' : 'grey'}>
+                  {category.active ? 'Active' : 'Inactive'}
+                </Pill>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={pending}
+                  onClick={() =>
+                    run(() => setCategoryActive(category.id, !category.active))
+                  }
+                >
+                  {category.active ? 'Turn off' : 'Turn on'}
+                </Button>
+              </div>
+              <p className="type-caption text-muted">
+                Turning a category off hides it from browsing and new sign ups. Existing
+                providers, services and bookings stay exactly as they are.
+              </p>
+              <p className="type-caption text-muted">
+                {category.providers_total} providers, {category.providers_live} live
+              </p>
+            </Card>
+
+            <Card title="Services">
               <ul className="flex flex-col gap-3">
-                {history.map((e) => (
-                  <li key={e.id}>
-                    <p className="type-body-s font-semibold">{e.text}</p>
-                    <p className="type-caption text-muted">{e.when}</p>
-                  </li>
+                {category.services.map((s) => (
+                  <ServiceRow
+                    key={s.id}
+                    service={s}
+                    categoryId={category.id}
+                    busy={pending}
+                    run={run}
+                  />
                 ))}
               </ul>
-            )}
-          </Card>
-        </aside>
-      ) : null}
+              <AddService categoryId={category.id} busy={pending} run={run} />
+            </Card>
+
+            <Card title="Change history">
+              {history.length === 0 ? (
+                <p className="type-body-s text-muted">No changes yet.</p>
+              ) : (
+                <ul className="flex flex-col gap-3">
+                  {history.map((e) => (
+                    <li key={e.id}>
+                      <p className="type-body-s font-semibold">{e.text}</p>
+                      <p className="type-caption text-muted">{e.when}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          </aside>
+        ) : null}
+      </div>
     </div>
   );
 }
 
-type Run = (work: () => Promise<CategoryResult>, then?: (r: CategoryResult) => void) => void;
+type Run = (
+  work: () => Promise<CategoryResult>,
+  then?: (r: CategoryResult) => void,
+) => void;
 
 function ServiceRow({
   service,
@@ -311,7 +329,10 @@ function ServiceRow({
             data.set('description', service.description);
             data.set('duration', String(service.suggested_duration_minutes));
             data.set('sort_order', String(service.sort_order));
-            run(() => saveCategoryService(service.id, categoryId, data), () => setRenaming(false));
+            run(
+              () => saveCategoryService(service.id, categoryId, data),
+              () => setRenaming(false),
+            );
           }}
         >
           <input
@@ -370,7 +391,10 @@ function AddService({
       action={() => {
         const data = new FormData();
         data.set('name', name);
-        run(() => saveCategoryService(null, categoryId, data), () => setName(''));
+        run(
+          () => saveCategoryService(null, categoryId, data),
+          () => setName(''),
+        );
       }}
     >
       <input
