@@ -14,8 +14,6 @@ export const serviceCategories: ServiceCategory[] = [
   { slug: 'gardening', label: 'Gardening', icon: 'leaf' },
   { slug: 'painting', label: 'Painting', icon: 'roller' },
   { slug: 'moving', label: 'Moving', icon: 'box' },
-  { slug: 'beauty', label: 'Beauty', icon: 'scissors' },
-  { slug: 'photography', label: 'Photography', icon: 'camera' },
 ];
 
 export type ProviderSummary = {
