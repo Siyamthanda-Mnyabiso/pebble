@@ -24,7 +24,8 @@ export type DetailBooking = {
 
 export type DetailEvent = {
   id: string;
-  kind: BookingStatus | 'requested' | 'rescheduled';
+  kind:
+    BookingStatus | 'requested' | 'rescheduled' | 'dispute_reply' | 'dispute_decision';
   detail: string;
   created_at: string;
 };
@@ -42,6 +43,17 @@ const EVENT_LABEL: Record<DetailEvent['kind'], string> = {
   declined: 'Request declined',
   expired: 'Request expired',
   disputed: 'A problem was reported',
+  dispute_reply: 'The provider replied',
+  dispute_decision: 'Pebble made a decision',
+};
+
+const STATUS_NOTE: Partial<Record<BookingStatus, string>> = {
+  pending: 'Waiting for the provider to accept this booking.',
+  awaiting_payment: 'Accepted. This booking is confirmed once it is paid.',
+  awaiting_confirmation:
+    'The provider marked this job finished. The customer confirms it, or reports a problem.',
+  declined: 'The provider could not take this booking.',
+  expired: 'This request ran out of time before it was accepted.',
 };
 
 function when(iso: string) {
@@ -100,9 +112,9 @@ export function BookingDetail({
         <StatusPill status={booking.status} />
       </div>
 
-      {booking.status === 'pending' ? (
+      {STATUS_NOTE[booking.status] ? (
         <p className="type-body-s bg-subtle mt-5 rounded-lg px-4 py-3">
-          Waiting for the provider to confirm this time.
+          {STATUS_NOTE[booking.status]}
         </p>
       ) : null}
 
@@ -158,7 +170,7 @@ export function BookingDetail({
           </span>
           <span className="mt-1 block">Total · {formatRand(booking.price_cents)}</span>
           <span className="type-caption text-muted mt-1 block font-normal">
-            Paid after the job is done.
+            The provider&apos;s price. Pebble adds no booking fee.
           </span>
         </Row>
         {booking.earning_cents !== undefined ? (

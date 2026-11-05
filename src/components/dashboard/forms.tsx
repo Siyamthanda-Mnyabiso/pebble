@@ -7,7 +7,9 @@ import {
   deleteService,
   removeTimeOff,
   saveHours,
+  savePreferences,
   saveService,
+  setServiceActive,
   updateListing,
   type FormState,
 } from '@/app/dashboard/actions';
@@ -15,9 +17,10 @@ import { FormMessage, TextField } from '@/components/auth/fields';
 import { Button } from '@/components/ui/button';
 import { CITY_NAMES } from '@/data/cities';
 import { serviceCategories } from '@/data/home';
-import { BOOKING_TIMES } from '@/lib/booking';
+import { BOOKING_TIMES, describeTimes } from '@/lib/booking';
 import { cn } from '@/lib/cn';
 import { formatDay } from '@/lib/dates';
+import { formatRand, splitPrice } from '@/lib/money';
 
 const initial: FormState = {};
 
@@ -164,11 +167,80 @@ export function ListingForm({
   );
 }
 
+const DURATIONS = [
+  [30, '30 minutes'],
+  [60, '1 hour'],
+  [90, '1 hour 30 minutes'],
+  [120, '2 hours'],
+  [180, '3 hours'],
+  [240, '4 hours'],
+  [300, '5 hours'],
+  [360, '6 hours'],
+  [480, '8 hours'],
+] as const;
+
+export function durationLabel(minutes: number) {
+  return DURATIONS.find(([m]) => m === minutes)?.[1] ?? `${minutes} minutes`;
+}
+
+type ServiceData = {
+  id: string;
+  name: string;
+  detail: string;
+  fromPrice: number;
+  durationMinutes: number;
+  active: boolean;
+  instantBooking: boolean;
+};
+
+function Switch({
+  name,
+  label,
+  defaultChecked,
+  onChange,
+  disabled,
+}: {
+  name?: string;
+  label: string;
+  defaultChecked?: boolean;
+  onChange?: (on: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <label className="inline-flex cursor-pointer items-center">
+      <input
+        type="checkbox"
+        role="switch"
+        name={name}
+        defaultChecked={defaultChecked}
+        disabled={disabled}
+        onChange={(e) => onChange?.(e.target.checked)}
+        className="peer sr-only"
+        aria-label={label}
+      />
+      <span
+        aria-hidden="true"
+        className={cn(
+          'bg-line-strong relative h-6 w-10 rounded-full transition-colors',
+          'after:absolute after:top-0.5 after:left-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-transform',
+          'peer-checked:bg-dark peer-checked:after:translate-x-4',
+          'peer-focus-visible:outline-ink peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2',
+          'peer-disabled:opacity-50',
+        )}
+      />
+    </label>
+  );
+}
+
 export function ServiceForm({
   service,
+  commissionPercent,
+  paymentsEnabled,
   onDone,
 }: {
-  service?: { id: string; name: string; detail: string; fromPrice: number };
+  service?: ServiceData;
+  commissionPercent: number;
+  paymentsEnabled: boolean;
   onDone?: () => void;
 }) {
   const [state, action, pending] = useActionState(
@@ -179,6 +251,10 @@ export function ServiceForm({
     },
     initial,
   );
+  const [price, setPrice] = useState(String(service?.fromPrice ?? ''));
+  const rand = Number(price);
+  const earn =
+    Number.isFinite(rand) && rand > 0 ? splitPrice(rand * 100, commissionPercent) : null;
   return (
     <form action={action} className="flex flex-col gap-4">
       {service ? <input type="hidden" name="id" value={service.id} /> : null}
@@ -191,24 +267,60 @@ export function ServiceForm({
           maxLength={60}
         />
         <TextField
-          label="From (R)"
+          label="Price (R)"
           name="price"
           type="number"
           inputMode="numeric"
           min={0}
           max={100000}
           step={1}
-          defaultValue={service?.fromPrice}
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
           required
         />
       </div>
+      {earn ? (
+        <p className="type-body-s text-muted -mt-2">
+          Customers pay {formatRand(rand * 100)}. Pebble takes {commissionPercent}% (
+          {formatRand(earn.commission)}). You receive {formatRand(earn.earning)}.
+        </p>
+      ) : null}
+      <label className="block">
+        <span className="type-body-s mb-2 block font-semibold">How long it takes</span>
+        <select
+          name="duration"
+          defaultValue={service?.durationMinutes ?? 60}
+          className="border-line-strong bg-page type-body-s h-[52px] w-full rounded-md border px-4"
+        >
+          {DURATIONS.map(([m, label]) => (
+            <option key={m} value={m}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </label>
       <TextField
         label="Details"
         name="detail"
         defaultValue={service?.detail}
         maxLength={120}
-        hint="For example: 3 to 5 hours · Supplies included"
+        hint="For example: Supplies included"
       />
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="type-body-s font-semibold">Instant booking</p>
+          <p className="type-caption text-muted">
+            {paymentsEnabled
+              ? 'Customers book and pay without waiting for you.'
+              : 'Takes effect once payments go live. Until then you approve each request.'}
+          </p>
+        </div>
+        <Switch
+          name="instant"
+          label="Instant booking"
+          defaultChecked={service?.instantBooking}
+        />
+      </div>
       <Feedback state={state} />
       <div className="flex gap-3">
         <Save pending={pending}>{service ? 'Save service' : 'Add service'}</Save>
@@ -225,28 +337,47 @@ export function ServiceForm({
 export function ServiceItem({
   service,
   canDelete,
+  commissionPercent,
+  paymentsEnabled,
 }: {
-  service: { id: string; name: string; detail: string; fromPrice: number };
+  service: ServiceData;
   canDelete: boolean;
+  commissionPercent: number;
+  paymentsEnabled: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState('');
   const [pending, startTransition] = useTransition();
+  const earn = splitPrice(service.fromPrice * 100, commissionPercent);
 
   if (editing) {
     return (
       <div className="py-5">
-        <ServiceForm service={service} onDone={() => setEditing(false)} />
+        <ServiceForm
+          service={service}
+          commissionPercent={commissionPercent}
+          paymentsEnabled={paymentsEnabled}
+          onDone={() => setEditing(false)}
+        />
       </div>
     );
   }
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 py-5">
+    <div
+      className={cn(
+        'flex flex-wrap items-center justify-between gap-3 py-5',
+        !service.active && 'opacity-60',
+      )}
+    >
       <div className="min-w-0">
         <p className="type-h4">{service.name}</p>
         <p className="type-body-s text-muted mt-0.5">
-          From R{service.fromPrice}
+          {formatRand(service.fromPrice * 100)} · {durationLabel(service.durationMinutes)}{' '}
+          · {service.instantBooking ? 'Instant booking' : 'Request to book'}
+        </p>
+        <p className="type-caption text-muted mt-0.5">
+          You receive {formatRand(earn.earning)} after {commissionPercent}% commission
           {service.detail ? ` · ${service.detail}` : ''}
         </p>
         {error ? (
@@ -255,7 +386,26 @@ export function ServiceItem({
           </p>
         ) : null}
       </div>
-      <div className="flex gap-2">
+      <div className="flex items-center gap-3">
+        <span className="flex items-center gap-2">
+          <Switch
+            label={
+              service.active ? `Turn off ${service.name}` : `Turn on ${service.name}`
+            }
+            defaultChecked={service.active}
+            disabled={pending}
+            onChange={(on) =>
+              startTransition(async () => {
+                setError('');
+                const result = await setServiceActive(service.id, on);
+                if (!result.ok) setError(result.error);
+              })
+            }
+          />
+          <span className="type-caption text-muted w-12">
+            {service.active ? 'Active' : 'Paused'}
+          </span>
+        </span>
         <Button size="sm" variant="secondary" onClick={() => setEditing(true)}>
           Edit
         </Button>
@@ -290,7 +440,13 @@ export function ServiceItem({
   );
 }
 
-export function AddServiceCard() {
+export function AddServiceCard({
+  commissionPercent,
+  paymentsEnabled,
+}: {
+  commissionPercent: number;
+  paymentsEnabled: boolean;
+}) {
   const [open, setOpen] = useState(false);
   if (!open) {
     return (
@@ -302,7 +458,11 @@ export function AddServiceCard() {
   return (
     <div className="bg-page shadow-card mt-6 max-w-[620px] rounded-xl p-6">
       <h3 className="type-h4 mb-4">New service</h3>
-      <ServiceForm onDone={() => setOpen(false)} />
+      <ServiceForm
+        commissionPercent={commissionPercent}
+        paymentsEnabled={paymentsEnabled}
+        onDone={() => setOpen(false)}
+      />
     </div>
   );
 }
@@ -318,52 +478,132 @@ const DAY_NAMES = [
 ];
 const ORDER = [1, 2, 3, 4, 5, 6, 0];
 
+function TimeSelect({
+  name,
+  label,
+  defaultValue,
+  empty,
+}: {
+  name: string;
+  label: string;
+  defaultValue: string;
+  empty?: string;
+}) {
+  return (
+    <label className="flex items-center gap-2">
+      <span className="type-caption text-muted">{label}</span>
+      <select
+        name={name}
+        defaultValue={defaultValue}
+        className="border-line-strong bg-page type-body-s h-10 rounded-md border px-3"
+      >
+        {empty ? <option value="">{empty}</option> : null}
+        {BOOKING_TIMES.map((t) => (
+          <option key={t} value={t}>
+            {t}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 export function HoursForm({ hours }: { hours: Record<number, string[]> }) {
   const [state, action, pending] = useActionState(saveHours, initial);
   return (
     <form action={action} className="mt-6 max-w-[760px]">
       <ul className="bg-page shadow-card divide-line divide-y rounded-xl px-4 sm:px-6">
-        {ORDER.map((weekday) => (
-          <li key={weekday} className="py-4">
-            <fieldset className="flex flex-wrap items-center gap-x-6 gap-y-3">
-              <legend className="sr-only">{DAY_NAMES[weekday]}</legend>
-              <span className="type-body-s w-28 font-semibold" aria-hidden="true">
-                {DAY_NAMES[weekday]}
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {BOOKING_TIMES.map((time) => (
-                  <label key={time} className="cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name={`day-${weekday}`}
-                      value={time}
-                      defaultChecked={hours[weekday]?.includes(time)}
-                      className="peer sr-only"
-                    />
-                    <span
-                      className={cn(
-                        'type-body-s border-line-strong inline-flex h-10 items-center rounded-full border px-4 font-semibold transition-colors',
-                        'peer-checked:bg-dark peer-checked:text-on-dark peer-checked:border-transparent',
-                        'peer-focus-visible:outline-ink peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2',
-                      )}
-                    >
-                      {time}
-                    </span>
-                  </label>
-                ))}
+        {ORDER.map((weekday) => {
+          const d = describeTimes(hours[weekday] ?? []);
+          return (
+            <li key={weekday} className="py-4">
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+                <span className="flex w-36 items-center gap-3">
+                  <Switch
+                    name={`on-${weekday}`}
+                    label={`Work on ${DAY_NAMES[weekday]}`}
+                    defaultChecked={d.on}
+                  />
+                  <span className="type-body-s font-semibold">{DAY_NAMES[weekday]}</span>
+                </span>
+                <TimeSelect
+                  name={`first-${weekday}`}
+                  label="First job"
+                  defaultValue={d.first}
+                />
+                <TimeSelect
+                  name={`last-${weekday}`}
+                  label="Last job"
+                  defaultValue={d.last}
+                />
+                <TimeSelect
+                  name={`break-${weekday}`}
+                  label="Break"
+                  defaultValue={d.skip}
+                  empty="None"
+                />
               </div>
-            </fieldset>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
       <p className="type-caption text-muted mt-3">
-        Tap the start times you take bookings for. A day with none selected is a day off.
+        Customers can book the times between your first and last job, apart from your
+        break. Turn a day off to take it as a day off.
       </p>
       <div className="mt-4 flex flex-col gap-4">
         <Feedback state={state} ok="Hours saved." />
         <div>
           <Save pending={pending}>Save hours</Save>
         </div>
+      </div>
+    </form>
+  );
+}
+
+export function PreferencesForm({
+  bufferMinutes,
+  maxDaily,
+}: {
+  bufferMinutes: number;
+  maxDaily: number | null;
+}) {
+  const [state, action, pending] = useActionState(savePreferences, initial);
+  return (
+    <form
+      action={action}
+      className="bg-page shadow-card mt-6 flex max-w-[460px] flex-col gap-4 rounded-xl p-6"
+    >
+      <label className="block">
+        <span className="type-body-s mb-2 block font-semibold">Gap between jobs</span>
+        <select
+          name="buffer"
+          defaultValue={bufferMinutes}
+          className="border-line-strong bg-page type-body-s h-[52px] w-full rounded-md border px-4"
+        >
+          {[0, 15, 30, 45, 60, 90, 120].map((m) => (
+            <option key={m} value={m}>
+              {m === 0 ? 'No gap' : `${m} minutes`}
+            </option>
+          ))}
+        </select>
+        <span className="type-caption text-muted mt-1 block">
+          Time for travel and a short break. Customers cannot book inside it.
+        </span>
+      </label>
+      <TextField
+        label="Most bookings in a day"
+        name="max"
+        type="number"
+        inputMode="numeric"
+        min={1}
+        max={50}
+        defaultValue={maxDaily ?? ''}
+        hint="Leave empty for no limit."
+      />
+      <Feedback state={state} ok="Preferences saved." />
+      <div>
+        <Save pending={pending}>Save preferences</Save>
       </div>
     </form>
   );

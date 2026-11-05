@@ -59,7 +59,13 @@ async function Bookings() {
   const all = bookings ?? [];
   const upcoming = all.filter(
     (b) =>
-      (b.status === 'pending' || b.status === 'confirmed') && b.scheduled_date >= today,
+      b.status === 'awaiting_confirmation' ||
+      b.status === 'in_progress' ||
+      b.status === 'disputed' ||
+      ((b.status === 'pending' ||
+        b.status === 'awaiting_payment' ||
+        b.status === 'confirmed') &&
+        b.scheduled_date >= today),
   );
   const previous = all.filter((b) => !upcoming.includes(b)).reverse();
 
@@ -153,10 +159,13 @@ async function Row({
       </div>
       <div className="flex items-center gap-3">
         <StatusPill status={booking.status} />
-        {!past && (booking.status === 'pending' || booking.status === 'confirmed') ? (
+        {!past &&
+        (booking.status === 'pending' ||
+          booking.status === 'awaiting_payment' ||
+          booking.status === 'confirmed') ? (
           <BookingActions
             bookingId={booking.id}
-            actions={[{ label: 'Cancel', status: 'cancelled', danger: true }]}
+            actions={[{ label: 'Cancel', move: 'cancel', danger: true }]}
           />
         ) : null}
         {past && booking.status === 'completed' ? (

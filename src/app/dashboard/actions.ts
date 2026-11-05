@@ -4,28 +4,46 @@ import { revalidatePath } from 'next/cache';
 import { isCity } from '@/data/cities';
 import { serviceCategories } from '@/data/home';
 import { getUser } from '@/lib/auth';
-import { BOOKING_TIMES } from '@/lib/booking';
+import { BOOKING_TIMES, timesFor } from '@/lib/booking';
 import { isOwnUpload, MAX_PHOTOS, PHOTO_BUCKET, uploadPath } from '@/lib/photos';
 import { requireProvider } from '@/lib/dashboard';
 import { createClient } from '@/lib/supabase/server';
 
 export type StatusResult = { ok: true } | { ok: false; error: string };
 
-const ALLOWED = ['confirmed', 'completed', 'cancelled'] as const;
+/** What a provider or customer asks for. The database decides which changes are allowed. */
+const MOVES = ['accept', 'decline', 'start', 'done', 'cancel', 'confirm_done'] as const;
+export type BookingMove = (typeof MOVES)[number];
 
 /**
- * Providers confirm, complete or cancel bookings for their listing. Customers
- * cancel their own. Which changes are legal is enforced in the database.
+ * Providers accept, decline, start or finish bookings for their listing. Customers cancel their own and
+ * confirm finished jobs. Accepting waits for payment when payments are live, otherwise it confirms.
  */
 export async function setBookingStatus(
   bookingId: string,
-  status: (typeof ALLOWED)[number],
+  move: BookingMove,
 ): Promise<StatusResult> {
   const user = await getUser();
   if (!user) return { ok: false, error: 'Please sign in again.' };
-  if (!ALLOWED.includes(status)) return { ok: false, error: 'That is not allowed.' };
+  if (!MOVES.includes(move)) return { ok: false, error: 'That is not allowed.' };
 
   const supabase = await createClient();
+  let status: string;
+  if (move === 'accept') {
+    const { data: terms } = await supabase.rpc('public_booking_settings');
+    const live =
+      Number((terms as Record<string, number> | null)?.payments_enabled ?? 0) === 1;
+    status = live ? 'awaiting_payment' : 'confirmed';
+  } else {
+    status = {
+      decline: 'declined',
+      start: 'in_progress',
+      done: 'awaiting_confirmation',
+      cancel: 'cancelled',
+      confirm_done: 'completed',
+    }[move];
+  }
+
   const { data, error } = await supabase
     .from('bookings')
     .update({ status })
@@ -36,8 +54,10 @@ export async function setBookingStatus(
     return {
       ok: false,
       error: error.message.includes('on or after')
-        ? 'You can mark a job complete on or after its date.'
-        : 'That change is not allowed for this booking.',
+        ? 'You can mark a job done on or after its date.'
+        : error.message.includes('expired')
+          ? 'This request has expired.'
+          : 'That change is not allowed for this booking.',
     };
   }
   if (!data || data.length === 0) {
@@ -45,6 +65,63 @@ export async function setBookingStatus(
   }
   revalidatePath('/dashboard', 'layout');
   revalidatePath('/account', 'layout');
+  return { ok: true };
+}
+
+/** A customer tells Pebble the job was not done properly. The payout stays held until we decide. */
+export async function reportIssue(
+  bookingId: string,
+  reason: string,
+  details: string,
+): Promise<StatusResult> {
+  const user = await getUser();
+  if (!user) return { ok: false, error: 'Please sign in again.' };
+  if (!['not_done', 'poor_quality', 'no_show', 'other'].includes(reason)) {
+    return { ok: false, error: 'Choose what went wrong.' };
+  }
+  const text = details.trim();
+  if (text.length < 10)
+    return { ok: false, error: 'Tell us a little more, at least a sentence.' };
+  if (text.length > 2000) return { ok: false, error: 'Keep it under 2000 characters.' };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('report_booking_issue', {
+    p_booking: bookingId,
+    p_reason: reason,
+    p_details: text,
+  });
+  if (error) {
+    return { ok: false, error: 'We could not send your report. Please try again.' };
+  }
+  revalidatePath('/account', 'layout');
+  revalidatePath('/dashboard', 'layout');
+  return { ok: true };
+}
+
+/** The provider's side of a dispute. One reply, shown to the Pebble team. */
+export async function replyToDispute(
+  disputeId: string,
+  text: string,
+): Promise<StatusResult> {
+  const { provider } = await requireProvider('/dashboard/bookings');
+  if (!provider) return { ok: false, error: 'Create your listing first.' };
+  const reply = text.trim();
+  if (reply.length < 5 || reply.length > 2000) {
+    return { ok: false, error: 'Write between a few words and 2000 characters.' };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('reply_to_dispute', {
+    p_dispute: disputeId,
+    p_text: reply,
+  });
+  if (error) {
+    return {
+      ok: false,
+      error: error.message.includes('already replied')
+        ? 'You have already replied.'
+        : 'We could not send your reply.',
+    };
+  }
+  revalidatePath('/dashboard', 'layout');
   return { ok: true };
 }
 
@@ -144,17 +221,33 @@ export async function saveService(_: FormState, formData: FormData): Promise<For
   const name = field(formData, 'name');
   const detail = field(formData, 'detail');
   const price = Number(field(formData, 'price'));
+  const duration = Number(field(formData, 'duration'));
+  const instant = formData.get('instant') === 'on';
   if (name.length < 2 || name.length > 60) return { error: 'Enter a service name.' };
   if (detail.length > 120) return { error: 'Keep the details under 120 characters.' };
   if (!Number.isInteger(price) || price < 0 || price > 100000) {
-    return { error: 'Enter a starting price in whole rand.' };
+    return { error: 'Enter a price in whole rand.' };
+  }
+  if (
+    !Number.isInteger(duration) ||
+    duration < 15 ||
+    duration > 720 ||
+    duration % 15 !== 0
+  ) {
+    return { error: 'Choose how long the service takes.' };
   }
 
   const supabase = await createClient();
   const { error } = id
     ? await supabase
         .from('provider_services')
-        .update({ name, detail, from_price: price })
+        .update({
+          name,
+          detail,
+          from_price: price,
+          duration_minutes: duration,
+          instant_booking: instant,
+        })
         .eq('id', id)
         .eq('provider_slug', provider.slug)
     : await supabase.from('provider_services').insert({
@@ -162,6 +255,8 @@ export async function saveService(_: FormState, formData: FormData): Promise<For
         name,
         detail,
         from_price: price,
+        duration_minutes: duration,
+        instant_booking: instant,
         position: provider.services.length,
       });
   if (error) {
@@ -174,6 +269,24 @@ export async function saveService(_: FormState, formData: FormData): Promise<For
   }
   refresh(provider.slug);
   return { saved: true };
+}
+
+/** Switch a service on or off. A service that is off is hidden and cannot be booked. */
+export async function setServiceActive(
+  serviceId: string,
+  active: boolean,
+): Promise<StatusResult> {
+  const { provider } = await requireProvider('/dashboard/services');
+  if (!provider) return { ok: false, error: 'Create your listing first.' };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('provider_services')
+    .update({ active })
+    .eq('id', serviceId)
+    .eq('provider_slug', provider.slug);
+  if (error) return { ok: false, error: 'We could not change that service.' };
+  refresh(provider.slug);
+  return { ok: true };
 }
 
 export async function deleteService(serviceId: string): Promise<StatusResult> {
@@ -194,16 +307,62 @@ export async function saveHours(_: FormState, formData: FormData): Promise<FormS
   const { provider } = await requireProvider('/dashboard/availability');
   if (!provider) return { error: 'Create your listing first.' };
 
-  const rows = Array.from({ length: 7 }, (_, weekday) => ({
-    provider_slug: provider.slug,
-    weekday,
-    times: BOOKING_TIMES.filter((t) => formData.getAll(`day-${weekday}`).includes(t)),
-  }));
+  const rows = [];
+  for (let weekday = 0; weekday < 7; weekday++) {
+    const on = formData.get(`on-${weekday}`) === 'on';
+    const first = field(formData, `first-${weekday}`);
+    const last = field(formData, `last-${weekday}`);
+    const skip = field(formData, `break-${weekday}`);
+    if (on) {
+      if (
+        !BOOKING_TIMES.includes(first) ||
+        !BOOKING_TIMES.includes(last) ||
+        first > last
+      ) {
+        return { error: 'The first booking must be at or before the last one.' };
+      }
+      if (skip && !BOOKING_TIMES.includes(skip))
+        return { error: 'Choose a valid break.' };
+    }
+    rows.push({
+      provider_slug: provider.slug,
+      weekday,
+      times: on ? timesFor(first, last, skip) : [],
+    });
+  }
   const supabase = await createClient();
   const { error } = await supabase
     .from('provider_hours')
     .upsert(rows, { onConflict: 'provider_slug,weekday' });
   if (error) return { error: 'We could not save your hours. Please try again.' };
+  refresh(provider.slug);
+  return { saved: true };
+}
+
+/** Gap between jobs and the most bookings a day. */
+export async function savePreferences(
+  _: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const { provider } = await requireProvider('/dashboard/availability');
+  if (!provider) return { error: 'Create your listing first.' };
+  const buffer = Number(field(formData, 'buffer'));
+  const rawMax = field(formData, 'max');
+  const max = rawMax === '' ? null : Number(rawMax);
+  if (!Number.isInteger(buffer) || buffer < 0 || buffer > 240 || buffer % 5 !== 0) {
+    return { error: 'Choose a gap of up to 4 hours.' };
+  }
+  if (max !== null && (!Number.isInteger(max) || max < 1 || max > 50)) {
+    return { error: 'Most bookings a day must be between 1 and 50, or left empty.' };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('provider_booking_settings')
+    .upsert(
+      { provider_slug: provider.slug, buffer_minutes: buffer, max_daily_bookings: max },
+      { onConflict: 'provider_slug' },
+    );
+  if (error) return { error: 'We could not save your preferences. Please try again.' };
   refresh(provider.slug);
   return { saved: true };
 }

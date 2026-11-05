@@ -3,10 +3,11 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { BookingDetail } from '@/components/booking/booking-detail';
 import type { DetailBooking, DetailEvent } from '@/components/booking/booking-detail';
+import { DisputeSummary, type DisputeView } from '@/components/booking/dispute-panels';
 import { BookingActions } from '@/components/dashboard/booking-actions';
 import { NotLinked, providerActions } from '@/components/dashboard/booking-row';
 import { ButtonLink } from '@/components/ui/button';
-import { requireProvider } from '@/lib/dashboard';
+import { requireProvider, type DashboardBooking } from '@/lib/dashboard';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = { title: 'Booking' };
@@ -33,15 +34,24 @@ async function Content({
   if (!provider) return <NotLinked />;
 
   const supabase = await createClient();
-  const [{ data: booking }, { data: events }] = await Promise.all([
+  const [{ data: booking }, { data: disputes }, { data: events }] = await Promise.all([
     supabase
       .from('bookings')
       .select(
-        'id, reference, user_id, service, scheduled_date, start_time, address, notes, price_cents, commission_cents, earning_cents, status, created_at',
+        'id, reference, user_id, service, scheduled_date, start_time, address, notes, price_cents, commission_cents, earning_cents, status, created_at, expires_at, duration_minutes, booking_mode, payment_status, payout_status, confirm_by',
       )
       .eq('id', id)
       .eq('provider_slug', provider.slug)
-      .maybeSingle<DetailBooking & { user_id: string }>(),
+      .maybeSingle<DetailBooking & DashboardBooking>(),
+    supabase
+      .from('disputes')
+      .select(
+        'id, reason, details, provider_reply, status, decision, decision_note, refund_cents, created_at',
+      )
+      .eq('booking_id', id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .returns<DisputeView[]>(),
     supabase
       .from('booking_events')
       .select('id, kind, detail, created_at')
@@ -79,6 +89,9 @@ async function Content({
             <BookingActions bookingId={booking.id} actions={actions} />
           ) : null}
           {hint ? <p className="type-body-s text-muted">{hint}</p> : null}
+          {disputes?.[0] ? (
+            <DisputeSummary dispute={disputes[0]} viewer="provider" />
+          ) : null}
         </>
       }
     />

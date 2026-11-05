@@ -24,10 +24,11 @@ export function Stats({ children }: { children: ReactNode }) {
 }
 
 const tone = {
-  green: 'bg-[#e6f4ea] text-[#1e6b36]',
+  // Status chips stay neutral: the label says what it is, colour does not.
+  green: 'bg-subtle text-ink',
   grey: 'bg-subtle text-muted',
-  red: 'bg-[#fde8e6] text-[#b3261e]',
-  blue: 'bg-[#e3f0fb] text-[#1a5a96]',
+  red: 'bg-subtle text-ink',
+  blue: 'bg-subtle text-ink',
 } as const;
 
 export function Pill({
