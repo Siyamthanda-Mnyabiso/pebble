@@ -144,7 +144,7 @@ async function Content({
             {[
               ['Customer', customer?.full_name || 'Customer'],
               ['Provider', provider?.name || b.provider_slug],
-              ['Customer paid', formatRand(b.price_cents)],
+              ['Job price', formatRand(b.price_cents)],
               ['Pebble commission', formatRand(b.commission_cents)],
               ['Provider earnings', formatRand(b.earning_cents)],
               [
