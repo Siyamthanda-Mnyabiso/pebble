@@ -1,6 +1,8 @@
 do $$
 declare o uuid := gen_random_uuid(); c uuid := gen_random_uuid(); a uuid := gen_random_uuid(); sl text; r text := ''; st text; n int; b1 uuid; d date := current_date + 3;
 begin
+  -- the test providers stand in for providers who joined before the category catalogue
+  update public.service_categories set open_to_new_providers = true, alias_of = null where slug in ('cleaning','plumbing');
   insert into auth.users (id, instance_id, aud, role, email) values
    (o,'00000000-0000-0000-0000-000000000000','authenticated','authenticated','p@test.invalid'),
    (c,'00000000-0000-0000-0000-000000000000','authenticated','authenticated','c@test.invalid'),
