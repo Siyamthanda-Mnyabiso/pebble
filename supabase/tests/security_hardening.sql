@@ -90,7 +90,7 @@ begin
   insert into public.bookings (reference, user_id, provider_slug, service, scheduled_date, start_time, address, price_cents, fee_cents)
     values ('E2E-1', c, sl, 'Leak repair', d, '08:00', '1 Long Street, Cape Town', 1, 0) returning id into bid;
   select price_cents::text || '/' || fee_cents into st from public.bookings where id = bid;
-  r := r || E'\n6 booking price/fee forced to: ' || st || ' (expect 45000/2500)';
+  r := r || E'\n6 booking price/fee forced to: ' || st || ' (expect 45000/0)';
   begin insert into public.bookings (reference, user_id, provider_slug, service, scheduled_date, start_time, address, price_cents) values ('E2E-2', c, sl, 'Leak repair', d, '08:00', '2 Long Street, Cape Town', 45000);
     r := r || E'\n6 BAD double booking'; exception when unique_violation then r := r || E'\n6 double booking blocked'; end;
   begin insert into public.bookings (reference, user_id, provider_slug, service, scheduled_date, start_time, address, price_cents) values ('E2E-3', c, sl, 'Leak repair', d, '03:00', '2 Long Street, Cape Town', 45000);
@@ -127,10 +127,10 @@ begin
   -- 8 complete, review (forged provider and hidden flag are overridden), admin hides it
   update public.bookings set scheduled_date = current_date where id = bid;
   perform set_config('request.jwt.claims', json_build_object('sub', o, 'role','authenticated')::text, true);
-  set local role authenticated; update public.bookings set status = 'completed' where id = bid; reset role;
+  set local role authenticated; update public.bookings set status = 'awaiting_confirmation' where id = bid; reset role;
   perform set_config('request.jwt.claims','',true);
   perform set_config('request.jwt.claims', json_build_object('sub', c, 'role','authenticated')::text, true);
-  set local role authenticated;
+  set local role authenticated; update public.bookings set status = 'completed' where id = bid;
   insert into public.reviews (user_id, booking_id, provider_slug, rating, body, hidden) values (c, bid, 'bright-spark-electrical', 5, 'Great job', true);
   reset role; perform set_config('request.jwt.claims','',true);
   select provider_slug || '/hidden=' || hidden into st from public.reviews where booking_id = bid; r := r || E'\n8 stored review: ' || st || ' (expect ' || sl || '/hidden=false)';
@@ -143,7 +143,7 @@ begin
 
   -- 9 payout, then suspended provider cannot act
   perform set_config('request.jwt.claims', json_build_object('sub', o, 'role','authenticated')::text, true);
-  set local role authenticated; select public.request_payout() into pay; r := r || E'\n9 payout requested cents: ' || pay || ' (expect 45000)'; reset role;
+  set local role authenticated; select public.request_payout() into pay; r := r || E'\n9 payout requested cents: ' || pay || ' (expect 40500: R450 less 10%)'; reset role;
   perform set_config('request.jwt.claims','',true);
   insert into public.bookings (reference, user_id, provider_slug, service, scheduled_date, start_time, address, price_cents, fee_cents, status)
     values ('SUSP-1', c, sl, 'Leak repair', d, '12:00', '1 Long Street, Cape Town', 45000, 2500, 'pending');
