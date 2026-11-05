@@ -34,7 +34,6 @@ type Row = {
   scheduled_date: string;
   start_time: string;
   price_cents: number;
-  fee_cents: number;
   status: keyof typeof tone;
 };
 
@@ -63,7 +62,7 @@ async function List({
   let query = supabase
     .from('bookings')
     .select(
-      'id, reference, user_id, provider_slug, service, scheduled_date, start_time, price_cents, fee_cents, status',
+      'id, reference, user_id, provider_slug, service, scheduled_date, start_time, price_cents, status',
     )
     .order('created_at', { ascending: false })
     .limit(150);
@@ -128,7 +127,7 @@ async function List({
               <Cell>
                 {formatDay(b.scheduled_date)} {b.start_time.slice(0, 5)}
               </Cell>
-              <Cell>{formatRand(b.price_cents + b.fee_cents)}</Cell>
+              <Cell>{formatRand(b.price_cents)}</Cell>
               <Cell>
                 <Pill tone={tone[b.status]}>{b.status}</Pill>
               </Cell>

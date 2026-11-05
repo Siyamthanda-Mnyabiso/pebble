@@ -16,7 +16,8 @@ export type DetailBooking = {
   address: string;
   notes: string;
   price_cents: number;
-  fee_cents: number;
+  commission_cents?: number;
+  earning_cents?: number;
   status: BookingStatus;
   created_at: string;
 };
@@ -81,8 +82,6 @@ export function BookingDetail({
   who: { label: string; name: string; phone?: string; href?: string; image?: string };
   actions?: ReactNode;
 }) {
-  const total = booking.price_cents + booking.fee_cents;
-
   return (
     <div className="max-w-[760px]">
       <Link
@@ -157,14 +156,21 @@ export function BookingDetail({
           <span className="block font-normal">
             {booking.service} · {formatRand(booking.price_cents)}
           </span>
-          <span className="block font-normal">
-            Service fee · {formatRand(booking.fee_cents)}
-          </span>
-          <span className="mt-1 block">Total · {formatRand(total)}</span>
+          <span className="mt-1 block">Total · {formatRand(booking.price_cents)}</span>
           <span className="type-caption text-muted mt-1 block font-normal">
             Paid after the job is done.
           </span>
         </Row>
+        {booking.earning_cents !== undefined ? (
+          <Row label="Your earnings">
+            <span className="block font-normal">
+              Pebble commission · {formatRand(booking.commission_cents ?? 0)}
+            </span>
+            <span className="mt-1 block">
+              You receive · {formatRand(booking.earning_cents)}
+            </span>
+          </Row>
+        ) : null}
       </dl>
 
       <section className="mt-10">

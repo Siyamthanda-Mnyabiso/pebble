@@ -2,7 +2,6 @@
 
 import { getProvider } from '@/data/providers';
 import { getUser } from '@/lib/auth';
-import { SERVICE_FEE } from '@/lib/booking';
 import { createClient } from '@/lib/supabase/server';
 
 export type BookingInput = {
@@ -58,7 +57,6 @@ export async function createBooking(input: BookingInput): Promise<BookingResult>
       address,
       notes,
       price_cents: service.fromPrice * 100,
-      fee_cents: SERVICE_FEE * 100,
     });
     if (!error) return { ok: true, reference };
     if (error.code === '23505' && error.message.includes('bookings_slot_unique')) {

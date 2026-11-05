@@ -8,7 +8,6 @@ import { createBooking } from '@/app/book/[slug]/actions';
 import { Icon, type IconName } from '@/components/icons';
 import { Button, ButtonLink } from '@/components/ui/button';
 import type { Provider } from '@/data/providers';
-import { SERVICE_FEE } from '@/lib/booking';
 import { cn } from '@/lib/cn';
 import { formatDay } from '@/lib/dates';
 import { Stepper } from './stepper';
@@ -63,14 +62,10 @@ function Summary({
           <dt className="type-body text-muted">{serviceName}</dt>
           <dd className="type-body font-semibold">R{rand.format(price)}</dd>
         </div>
-        <div className="flex justify-between gap-4">
-          <dt className="type-body text-muted">Service fee</dt>
-          <dd className="type-body font-semibold">R{SERVICE_FEE}</dd>
-        </div>
       </dl>
       <div className="border-ink mt-4 flex justify-between border-t pt-4">
         <p className="type-body font-semibold">Total</p>
-        <p className="type-body font-semibold">R{rand.format(price + SERVICE_FEE)}</p>
+        <p className="type-body font-semibold">R{rand.format(price)}</p>
       </div>
       <div className="mt-5">{action}</div>
       <p className="type-caption text-muted mt-4">{note}</p>
@@ -205,7 +200,7 @@ export function BookingFlow({ provider }: { provider: Provider }) {
                 <p className="type-h3">{draft.service}</p>
                 <p className="type-body-s text-muted">{provider.name}</p>
               </div>
-              <p className="type-h3">R{rand.format(service.fromPrice + SERVICE_FEE)}</p>
+              <p className="type-h3">R{rand.format(service.fromPrice)}</p>
             </div>
             <ul className="border-line mt-5 flex flex-col gap-4 border-t pt-5">
               {(

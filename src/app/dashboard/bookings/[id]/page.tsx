@@ -37,7 +37,7 @@ async function Content({
     supabase
       .from('bookings')
       .select(
-        'id, reference, user_id, service, scheduled_date, start_time, address, notes, price_cents, fee_cents, status, created_at',
+        'id, reference, user_id, service, scheduled_date, start_time, address, notes, price_cents, commission_cents, earning_cents, status, created_at',
       )
       .eq('id', id)
       .eq('provider_slug', provider.slug)
