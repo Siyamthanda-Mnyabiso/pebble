@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import { PageHeading } from '@/components/account/ui';
 import { DailyChart, Pill, Stat, Stats } from '@/components/admin/parts';
-import { categoryLabel } from '@/data/providers';
+import { getCategoryNames } from '@/data/categories';
 import { loadStats, requireAdmin } from '@/lib/admin';
 import { formatDay } from '@/lib/dates';
 import { formatRand } from '@/lib/money';
@@ -40,7 +40,7 @@ const statusTone = STATUS_TONE;
 async function Overview() {
   await requireAdmin('/admin');
   const supabase = await createClient();
-  const [stats, { data: recent }] = await Promise.all([
+  const [stats, { data: recent }, names] = await Promise.all([
     loadStats(),
     supabase
       .from('bookings')
@@ -48,6 +48,7 @@ async function Overview() {
       .order('created_at', { ascending: false })
       .limit(6)
       .returns<Recent[]>(),
+    getCategoryNames(),
   ]);
 
   const totalByCategory = stats.by_category.reduce((sum, c) => sum + c.n, 0) || 1;
@@ -99,7 +100,7 @@ async function Overview() {
               {stats.by_category.map((c) => (
                 <li key={c.category}>
                   <div className="type-body-s flex justify-between">
-                    <span>{categoryLabel(c.category)}</span>
+                    <span>{names[c.category] ?? c.category}</span>
                     <span className="text-muted">
                       {Math.round((c.n / totalByCategory) * 100)}%
                     </span>

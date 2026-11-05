@@ -89,6 +89,9 @@ export async function loadSchedule(slug: string, from: string) {
 
 export type OwnService = {
   id: string;
+  /** The catalogue service this is, or null for a free-text service from before the catalogue. */
+  serviceId: string | null;
+  instantAllowed: boolean;
   name: string;
   detail: string;
   fromPrice: number;
@@ -97,23 +100,101 @@ export type OwnService = {
   instantBooking: boolean;
 };
 
+/** The categories the provider works in, with the catalogue services they could offer. */
+export type OwnCategory = {
+  id: string;
+  slug: string;
+  label: string;
+  legacy: boolean;
+  main: boolean;
+  allowInstantBooking: boolean;
+  /** Every catalogue service of the category, including ones switched off. */
+  serviceIds: string[];
+  services: { id: string; name: string; suggestedDurationMinutes: number }[];
+};
+
+export async function loadOwnCategories(
+  slug: string,
+  mainSlug: string,
+): Promise<OwnCategory[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('provider_categories')
+    .select(
+      'category:service_categories(id, slug, name, is_legacy, allow_instant_booking, sort_order, category_services(id, name, active, sort_order, suggested_duration_minutes))',
+    )
+    .eq('provider_slug', slug)
+    .returns<
+      {
+        category: {
+          id: string;
+          slug: string;
+          name: string;
+          is_legacy: boolean;
+          allow_instant_booking: boolean;
+          sort_order: number;
+          category_services: {
+            id: string;
+            name: string;
+            active: boolean;
+            sort_order: number;
+            suggested_duration_minutes: number;
+          }[];
+        } | null;
+      }[]
+    >();
+  return (data ?? [])
+    .flatMap((row) => (row.category ? [row.category] : []))
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((c) => ({
+      id: c.id,
+      slug: c.slug,
+      label: c.name,
+      legacy: c.is_legacy,
+      main: c.slug === mainSlug,
+      allowInstantBooking: c.allow_instant_booking,
+      serviceIds: c.category_services.map((x) => x.id),
+      services: c.category_services
+        .filter((x) => x.active)
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((x) => ({
+          id: x.id,
+          name: x.name,
+          suggestedDurationMinutes: x.suggested_duration_minutes,
+        })),
+    }));
+}
+
 /** The provider's own services, including ones switched off. */
-export async function loadOwnServices(slug: string): Promise<OwnService[]> {
+export async function loadOwnServices(
+  slug: string,
+  categories: OwnCategory[],
+): Promise<OwnService[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from('provider_services')
-    .select('id, name, detail, from_price, duration_minutes, active, instant_booking')
+    .select(
+      'id, service_id, name, detail, from_price, duration_minutes, active, instant_booking',
+    )
     .eq('provider_slug', slug)
     .order('position');
-  return (data ?? []).map((s) => ({
-    id: s.id,
-    name: s.name,
-    detail: s.detail,
-    fromPrice: s.from_price,
-    durationMinutes: s.duration_minutes,
-    active: s.active,
-    instantBooking: s.instant_booking,
-  }));
+  const main = categories.find((c) => c.main);
+  return (data ?? []).map((s) => {
+    const home = s.service_id
+      ? categories.find((c) => c.serviceIds.includes(s.service_id))
+      : main;
+    return {
+      id: s.id,
+      serviceId: s.service_id,
+      instantAllowed: home?.allowInstantBooking ?? true,
+      name: s.name,
+      detail: s.detail,
+      fromPrice: s.from_price,
+      durationMinutes: s.duration_minutes,
+      active: s.active,
+      instantBooking: s.instant_booking,
+    };
+  });
 }
 
 /** Gap between jobs and the most jobs in a day. */

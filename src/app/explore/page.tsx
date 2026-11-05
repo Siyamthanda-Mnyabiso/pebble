@@ -8,8 +8,8 @@ import { ProviderCard } from '@/components/home/provider-card';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { ButtonLink } from '@/components/ui/button';
 import { getSavedSlugs } from '@/lib/auth';
+import { resolveCategory } from '@/data/categories';
 import {
-  categoryLabel,
   listProviderCities,
   searchProviders,
   type ProviderFilters,
@@ -59,7 +59,7 @@ export default function ExplorePage({ searchParams }: PageProps<'/explore'>) {
       <Suspense fallback={<ExploreHeader area="Choose city" />}>
         <Header searchParams={searchParams} />
       </Suspense>
-      <Suspense fallback={<CategoryBar />}>
+      <Suspense fallback={<div className="border-line h-[74px] border-b" aria-hidden />}>
         <Categories searchParams={searchParams} />
       </Suspense>
       <main className="mx-auto w-full max-w-[1440px] px-4 pt-6 pb-16 md:px-8 lg:px-16">
@@ -85,7 +85,8 @@ async function Header({ searchParams }: Pick<PageProps<'/explore'>, 'searchParam
 
 async function Categories({ searchParams }: Pick<PageProps<'/explore'>, 'searchParams'>) {
   const params = await searchParams;
-  return <CategoryBar current={first(params.category)} q={first(params.q)} />;
+  const category = await resolveCategory(first(params.category));
+  return <CategoryBar current={category?.slug} q={first(params.q)} />;
 }
 
 async function Results({ searchParams }: Pick<PageProps<'/explore'>, 'searchParams'>) {
@@ -99,7 +100,7 @@ async function Results({ searchParams }: Pick<PageProps<'/explore'>, 'searchPara
   ]);
   const elsewhere = cities.filter((c) => c.city !== area);
 
-  const label = filters.category ? categoryLabel(filters.category) : undefined;
+  const label = (await resolveCategory(filters.category))?.label;
   const title = label
     ? `${label} services in ${area}`
     : filters.q

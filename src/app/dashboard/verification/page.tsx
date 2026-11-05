@@ -16,8 +16,8 @@ import { createClient } from '@/lib/supabase/server';
 import {
   DOC_KINDS,
   EVENT_LABEL,
+  loadCategoryRequirements,
   loadVerification,
-  NEEDS_CERTIFICATE,
   STATUS_META,
 } from '@/lib/verification';
 
@@ -77,9 +77,10 @@ async function Content() {
   const { provider } = await requireProvider('/dashboard/verification');
   if (!provider) return <NotLinked />;
 
-  const { verification, blockers, documents, events } = await loadVerification(
-    provider.slug,
-  );
+  const [{ verification, blockers, documents, events }, required] = await Promise.all([
+    loadVerification(provider.slug),
+    loadCategoryRequirements(provider.slug),
+  ]);
   if (!verification) return <NotLinked />;
   const supabase = await createClient();
   const videoUrl = verification.video_path
@@ -97,7 +98,7 @@ async function Content() {
   const meta = STATUS_META[status];
   const editable = status === 'draft' || status === 'changes_requested';
   const missing = new Set(blockers.provider);
-  const needsCert = NEEDS_CERTIFICATE.includes(provider.category);
+  const needsCert = required.licence;
   const docs = (kind: string) => documents.filter((d) => d.kind === kind);
 
   const checklist = [
@@ -211,7 +212,29 @@ async function Content() {
                 />
               </Item>
             ) : null}
-            <Item done={docs('business').length > 0} title={DOC_KINDS.business}>
+            {required.documents.map((doc) => (
+              <Item
+                key={doc.key}
+                done={!missing.has(`Upload: ${doc.label}`)}
+                title={doc.label}
+              >
+                <DocList items={docs(doc.kind)} locked={!editable} />
+                <DocumentUploader
+                  slug={provider.slug}
+                  kind={doc.kind}
+                  label={doc.label}
+                  locked={!editable}
+                />
+              </Item>
+            ))}
+            <Item
+              done={docs('business').length > 0}
+              title={
+                required.business
+                  ? 'Business registration (required for your category)'
+                  : DOC_KINDS.business
+              }
+            >
               <DocList items={docs('business')} locked={!editable} />
               <DocumentUploader
                 slug={provider.slug}

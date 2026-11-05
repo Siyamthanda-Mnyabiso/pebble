@@ -239,6 +239,11 @@ const glyphs = {
 
 export type IconName = keyof typeof glyphs;
 
+/** Categories store an icon name as text; unknown names fall back to a neutral icon. */
+export function asIconName(value: string): IconName {
+  return Object.hasOwn(glyphs, value) ? (value as IconName) : 'sparkles';
+}
+
 type IconProps = Omit<SVGProps<SVGSVGElement>, 'name'> & {
   name: IconName;
   size?: number;

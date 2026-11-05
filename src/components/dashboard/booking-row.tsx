@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { StatusPill } from '@/components/account/ui';
 import { Icon } from '@/components/icons';
+import { listSelectableCategories } from '@/data/categories';
 import type { Customer, DashboardBooking } from '@/lib/dashboard';
 import { formatDay, todayInSA } from '@/lib/dates';
 
@@ -141,7 +142,8 @@ export function BookingList({
   );
 }
 
-export function NotLinked() {
+export async function NotLinked() {
+  const categories = await listSelectableCategories();
   return (
     <div className="bg-subtle mt-8 rounded-lg px-6 py-12 text-center">
       <p className="type-h3">Set up your listing</p>
@@ -149,7 +151,9 @@ export function NotLinked() {
         Tell us about your business to get a public profile. You can add services, prices
         and your hours next.
       </p>
-      <CreateListingForm />
+      <CreateListingForm
+        categories={categories.map((c) => ({ slug: c.slug, label: c.label }))}
+      />
     </div>
   );
 }

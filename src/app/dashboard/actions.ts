@@ -2,7 +2,6 @@
 
 import { revalidatePath } from 'next/cache';
 import { isCity } from '@/data/cities';
-import { serviceCategories } from '@/data/home';
 import { getUser } from '@/lib/auth';
 import { BOOKING_TIMES, timesFor } from '@/lib/booking';
 import { isOwnUpload, MAX_PHOTOS, PHOTO_BUCKET, uploadPath } from '@/lib/photos';
@@ -176,8 +175,6 @@ function refresh(slug?: string) {
   }
 }
 
-const categories = serviceCategories.map((c) => c.slug);
-
 export async function createListing(
   _: FormState,
   formData: FormData,
@@ -189,7 +186,7 @@ export async function createListing(
   const area = field(formData, 'area');
   const city = field(formData, 'city');
   if (name.length < 2 || name.length > 80) return { error: 'Enter your business name.' };
-  if (!categories.includes(category)) return { error: 'Choose a category.' };
+  if (!category) return { error: 'Choose a category.' };
   if (area.length < 2 || area.length > 60)
     return { error: 'Enter the suburb or area you work in.' };
   if (!isCity(city)) return { error: 'Choose your city.' };
@@ -201,7 +198,13 @@ export async function createListing(
     p_area: area,
     p_city: city,
   });
-  if (error) return { error: 'We could not create your listing. Please try again.' };
+  if (error) {
+    return {
+      error: error.message.includes('not available')
+        ? 'That category is not available. Choose another.'
+        : 'We could not create your listing. Please try again.',
+    };
+  }
   refresh();
   return { saved: true, slug: data as string };
 }
@@ -221,10 +224,19 @@ export async function updateListing(
     area: field(formData, 'area'),
     city: field(formData, 'city'),
     reply_time: field(formData, 'reply_time'),
+    experience: field(formData, 'experience'),
+    skills: field(formData, 'skills')
+      .split(',')
+      .map((skill) => skill.trim())
+      .filter(Boolean),
   };
   if (next.name.length < 2 || next.name.length > 80)
     return { error: 'Enter your business name.' };
-  if (!categories.includes(next.category)) return { error: 'Choose a category.' };
+  if (!next.category) return { error: 'Choose a category.' };
+  if (next.experience.length > 1000)
+    return { error: 'Keep your experience under 1000 characters.' };
+  if (next.skills.length > 12 || next.skills.some((skill) => skill.length > 40))
+    return { error: 'List up to 12 skills, separated by commas.' };
   if (next.tagline.length > 120)
     return { error: 'Keep the tagline under 120 characters.' };
   if (next.about.length > 1000)
@@ -240,7 +252,46 @@ export async function updateListing(
     .from('providers')
     .update(next)
     .eq('slug', provider.slug);
-  if (error) return { error: 'We could not save your changes. Please try again.' };
+  if (error) {
+    return {
+      error: error.message.includes('not available')
+        ? 'That category is not available. Choose another.'
+        : error.message.includes('under review') ||
+            error.message.includes('contact support')
+          ? error.message
+          : 'We could not save your changes. Please try again.',
+    };
+  }
+  refresh(provider.slug);
+  return { saved: true };
+}
+
+/** Choose the categories the provider works in. The first one is shown as the main category. */
+export async function saveCategories(
+  _: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const { provider } = await requireProvider('/dashboard/profile');
+  if (!provider) return { error: 'Create your listing first.' };
+  const slugs = formData.getAll('categories').map(String).filter(Boolean);
+  if (slugs.length === 0) return { error: 'Choose at least one category.' };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('set_my_categories', { p_slugs: slugs });
+  if (error) {
+    const known = [
+      'under review',
+      'extra checks',
+      'Remove your services',
+      'not available',
+      'main category',
+    ];
+    return {
+      error: known.some((text) => error.message.includes(text))
+        ? error.message
+        : 'We could not save your categories. Please try again.',
+    };
+  }
   refresh(provider.slug);
   return { saved: true };
 }
@@ -255,7 +306,9 @@ export async function saveService(_: FormState, formData: FormData): Promise<For
   const price = Number(field(formData, 'price'));
   const duration = Number(field(formData, 'duration'));
   const instant = formData.get('instant') === 'on';
-  if (name.length < 2 || name.length > 60) return { error: 'Enter a service name.' };
+  const serviceId = field(formData, 'service_id');
+  if (!serviceId && (name.length < 2 || name.length > 60))
+    return { error: 'Choose a service.' };
   if (detail.length > 120) return { error: 'Keep the details under 120 characters.' };
   if (!Number.isInteger(price) || price < 0 || price > 100000) {
     return { error: 'Enter a price in whole rand.' };
@@ -274,7 +327,7 @@ export async function saveService(_: FormState, formData: FormData): Promise<For
     ? await supabase
         .from('provider_services')
         .update({
-          name,
+          ...(name ? { name } : {}),
           detail,
           from_price: price,
           duration_minutes: duration,
@@ -284,7 +337,8 @@ export async function saveService(_: FormState, formData: FormData): Promise<For
         .eq('provider_slug', provider.slug)
     : await supabase.from('provider_services').insert({
         provider_slug: provider.slug,
-        name,
+        name: name || 'Service',
+        ...(serviceId ? { service_id: serviceId } : {}),
         detail,
         from_price: price,
         duration_minutes: duration,
@@ -296,7 +350,11 @@ export async function saveService(_: FormState, formData: FormData): Promise<For
       error:
         error.code === '23505'
           ? 'You already have a service with that name.'
-          : 'We could not save that service. Please try again.',
+          : /Instant booking|at most|not available|Choose your service|Add the/.test(
+                error.message,
+              )
+            ? error.message
+            : 'We could not save that service. Please try again.',
     };
   }
   refresh(provider.slug);

@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import { Icon } from '@/components/icons';
 import { cn } from '@/lib/cn';
-import { serviceCategories } from '@/data/home';
+import { listCategories } from '@/data/categories';
 import { SectionHeader } from './section-header';
 
-export function ServiceTiles() {
+export async function ServiceTiles() {
+  const categories = await listCategories();
+  if (categories.length === 0) return null;
   return (
     <section
       aria-labelledby="popular-services"
@@ -17,7 +19,7 @@ export function ServiceTiles() {
         href="/explore"
       />
       <ul className="border-line -mx-4 mt-4 flex gap-2 overflow-x-auto border-b px-4 md:-mx-8 md:px-8 lg:mx-0 lg:gap-4 lg:px-0">
-        {serviceCategories.map((category) => (
+        {categories.map((category) => (
           <li key={category.slug} className="shrink-0 lg:flex-1">
             <Link
               href={`/explore?category=${category.slug}`}

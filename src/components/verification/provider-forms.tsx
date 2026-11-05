@@ -8,6 +8,7 @@ import {
 } from '@/app/dashboard/verification/actions';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
+import type { DocumentKind } from '@/lib/verification';
 
 const MAX_DOC = 10 * 1024 * 1024;
 const TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
@@ -139,7 +140,7 @@ export function DocumentUploader({
   locked,
 }: {
   slug: string;
-  kind: 'id' | 'business' | 'certification';
+  kind: DocumentKind;
   label: string;
   locked: boolean;
 }) {

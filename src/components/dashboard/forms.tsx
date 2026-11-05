@@ -6,6 +6,7 @@ import {
   createListing,
   deleteService,
   removeTimeOff,
+  saveCategories,
   saveHours,
   savePreferences,
   saveService,
@@ -16,7 +17,6 @@ import {
 import { FormMessage, TextField } from '@/components/auth/fields';
 import { Button } from '@/components/ui/button';
 import { CITY_NAMES } from '@/data/cities';
-import { serviceCategories } from '@/data/home';
 import { BOOKING_TIMES, describeTimes } from '@/lib/booking';
 import { cn } from '@/lib/cn';
 import { formatDay } from '@/lib/dates';
@@ -61,16 +61,24 @@ function CitySelect({ defaultValue }: { defaultValue?: string }) {
   );
 }
 
-function CategorySelect({ defaultValue }: { defaultValue?: string }) {
+export type CategoryOption = { slug: string; label: string };
+
+function CategorySelect({
+  options,
+  defaultValue,
+}: {
+  options: CategoryOption[];
+  defaultValue?: string;
+}) {
   return (
     <label className="block">
-      <span className="type-body-s mb-2 block font-semibold">Category</span>
+      <span className="type-body-s mb-2 block font-semibold">Main category</span>
       <select
         name="category"
-        defaultValue={defaultValue ?? 'cleaning'}
+        defaultValue={defaultValue ?? options[0]?.slug}
         className="border-line-strong bg-page type-body-s h-[52px] w-full rounded-md border px-4"
       >
-        {serviceCategories.map((c) => (
+        {options.map((c) => (
           <option key={c.slug} value={c.slug}>
             {c.label}
           </option>
@@ -80,7 +88,7 @@ function CategorySelect({ defaultValue }: { defaultValue?: string }) {
   );
 }
 
-export function CreateListingForm() {
+export function CreateListingForm({ categories }: { categories: CategoryOption[] }) {
   const [state, action, pending] = useActionState(createListing, initial);
   return (
     <form
@@ -88,7 +96,7 @@ export function CreateListingForm() {
       className="mx-auto mt-6 flex max-w-[460px] flex-col gap-4 text-left"
     >
       <TextField label="Business name" name="name" required maxLength={80} />
-      <CategorySelect />
+      <CategorySelect options={categories} />
       <CitySelect />
       <TextField
         label="Suburb or area"
@@ -106,7 +114,9 @@ export function CreateListingForm() {
 
 export function ListingForm({
   listing,
+  categories,
 }: {
+  categories: CategoryOption[];
   listing: {
     name: string;
     category: string;
@@ -115,6 +125,8 @@ export function ListingForm({
     area: string;
     city: string;
     replyTime: string;
+    experience: string;
+    skills: string[];
   };
 }) {
   const [state, action, pending] = useActionState(updateListing, initial);
@@ -127,7 +139,7 @@ export function ListingForm({
         required
         maxLength={80}
       />
-      <CategorySelect defaultValue={listing.category} />
+      <CategorySelect options={categories} defaultValue={listing.category} />
       <TextField
         label="Tagline"
         name="tagline"
@@ -145,6 +157,25 @@ export function ListingForm({
           className="border-line-strong bg-page focus:border-ink type-body-s w-full rounded-md border p-4 outline-none"
         />
       </label>
+      <label className="block">
+        <span className="type-body-s mb-2 block font-semibold">Experience</span>
+        <textarea
+          name="experience"
+          rows={3}
+          maxLength={1000}
+          defaultValue={listing.experience}
+          className="border-line-strong bg-page focus:border-ink type-body-s w-full rounded-md border p-4 outline-none"
+        />
+        <span className="type-caption text-muted mt-1 block">
+          For example: 8 years of garden care for homes in the southern suburbs.
+        </span>
+      </label>
+      <TextField
+        label="Skills"
+        name="skills"
+        defaultValue={listing.skills.join(', ')}
+        hint="Separate with commas, up to 12. For example: Lawn care, Hedge shaping"
+      />
       <CitySelect defaultValue={listing.city} />
       <TextField
         label="Suburb or area"
@@ -167,11 +198,71 @@ export function ListingForm({
   );
 }
 
+export function CategoriesForm({
+  options,
+  selected,
+  main,
+  locked,
+}: {
+  options: { slug: string; label: string; description: string }[];
+  selected: string[];
+  main: string;
+  locked?: string;
+}) {
+  const [state, action, pending] = useActionState(saveCategories, initial);
+  return (
+    <form action={action} className="mt-8 flex max-w-[620px] flex-col gap-4">
+      <div>
+        <h2 className="type-h3">Categories you work in</h2>
+        <p className="type-body-s text-muted mt-1">
+          Choose every category you offer. Your main category is chosen on your listing
+          above and always stays selected.
+        </p>
+      </div>
+      <input type="hidden" name="categories" value={main} />
+      <ul className="border-line divide-line divide-y rounded-lg border">
+        {options.map((option) => (
+          <li key={option.slug}>
+            <label className="flex cursor-pointer items-start gap-3 px-4 py-3">
+              <input
+                type="checkbox"
+                name={option.slug === main ? undefined : 'categories'}
+                value={option.slug}
+                defaultChecked={option.slug === main || selected.includes(option.slug)}
+                disabled={Boolean(locked) || option.slug === main}
+                className="accent-ink mt-1 h-4 w-4"
+              />
+              <span>
+                <span className="type-body-s block font-semibold">
+                  {option.label}
+                  {option.slug === main ? ' (main)' : ''}
+                </span>
+                <span className="type-caption text-muted block">
+                  {option.description}
+                </span>
+              </span>
+            </label>
+          </li>
+        ))}
+      </ul>
+      {locked ? <p className="type-body-s text-muted">{locked}</p> : null}
+      <Feedback state={state} />
+      {locked ? null : (
+        <div>
+          <Save pending={pending}>Save categories</Save>
+        </div>
+      )}
+    </form>
+  );
+}
+
 const DURATIONS = [
   [30, '30 minutes'],
+  [45, '45 minutes'],
   [60, '1 hour'],
   [90, '1 hour 30 minutes'],
   [120, '2 hours'],
+  [150, '2 hours 30 minutes'],
   [180, '3 hours'],
   [240, '4 hours'],
   [300, '5 hours'],
@@ -183,8 +274,18 @@ export function durationLabel(minutes: number) {
   return DURATIONS.find(([m]) => m === minutes)?.[1] ?? `${minutes} minutes`;
 }
 
+/** Catalogue services a provider can add, grouped by category. */
+export type ServiceGroup = {
+  label: string;
+  allowInstantBooking: boolean;
+  services: { id: string; name: string; suggestedDurationMinutes: number }[];
+};
+
 type ServiceData = {
   id: string;
+  serviceId: string | null;
+  /** Whether the service's category allows instant booking. */
+  instantAllowed: boolean;
   name: string;
   detail: string;
   fromPrice: number;
@@ -234,11 +335,14 @@ function Switch({
 
 export function ServiceForm({
   service,
+  groups,
   commissionPercent,
   paymentsEnabled,
   onDone,
 }: {
   service?: ServiceData;
+  /** When set, new services are picked from the catalogue instead of typed in. */
+  groups?: ServiceGroup[];
   commissionPercent: number;
   paymentsEnabled: boolean;
   onDone?: () => void;
@@ -252,6 +356,15 @@ export function ServiceForm({
     initial,
   );
   const [price, setPrice] = useState(String(service?.fromPrice ?? ''));
+  const [duration, setDuration] = useState(service?.durationMinutes ?? 60);
+  const [picked, setPicked] = useState('');
+  const pickedGroup = groups?.find((g) => g.services.some((x) => x.id === picked));
+  const instantAllowed = service
+    ? service.instantAllowed
+    : pickedGroup
+      ? pickedGroup.allowInstantBooking
+      : true;
+  const catalogue = Boolean(groups) && !service;
   const rand = Number(price);
   const earn =
     Number.isFinite(rand) && rand > 0 ? splitPrice(rand * 100, commissionPercent) : null;
@@ -259,13 +372,53 @@ export function ServiceForm({
     <form action={action} className="flex flex-col gap-4">
       {service ? <input type="hidden" name="id" value={service.id} /> : null}
       <div className="grid gap-4 sm:grid-cols-[1fr_160px]">
-        <TextField
-          label="Service name"
-          name="name"
-          defaultValue={service?.name}
-          required
-          maxLength={60}
-        />
+        {catalogue ? (
+          <label className="block">
+            <span className="type-body-s mb-2 block font-semibold">Service</span>
+            <select
+              name="service_id"
+              required
+              value={picked}
+              onChange={(e) => {
+                setPicked(e.target.value);
+                const chosen = groups
+                  ?.flatMap((g) => g.services)
+                  .find((x) => x.id === e.target.value);
+                if (chosen) setDuration(chosen.suggestedDurationMinutes);
+              }}
+              className="border-line-strong bg-page type-body-s h-[52px] w-full rounded-md border px-4"
+            >
+              <option value="" disabled>
+                Choose a service
+              </option>
+              {groups?.map((g) => (
+                <optgroup key={g.label} label={g.label}>
+                  {g.services.map((x) => (
+                    <option key={x.id} value={x.id}>
+                      {x.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </label>
+        ) : service?.serviceId ? (
+          <div>
+            <input type="hidden" name="service_id" value={service.serviceId} />
+            <span className="type-body-s mb-2 block font-semibold">Service</span>
+            <p className="type-body-s bg-subtle flex h-[52px] items-center rounded-md px-4">
+              {service.name}
+            </p>
+          </div>
+        ) : (
+          <TextField
+            label="Service name"
+            name="name"
+            defaultValue={service?.name}
+            required
+            maxLength={60}
+          />
+        )}
         <TextField
           label="Price (R)"
           name="price"
@@ -289,7 +442,8 @@ export function ServiceForm({
         <span className="type-body-s mb-2 block font-semibold">How long it takes</span>
         <select
           name="duration"
-          defaultValue={service?.durationMinutes ?? 60}
+          value={duration}
+          onChange={(e) => setDuration(Number(e.target.value))}
           className="border-line-strong bg-page type-body-s h-[52px] w-full rounded-md border px-4"
         >
           {DURATIONS.map(([m, label]) => (
@@ -310,15 +464,18 @@ export function ServiceForm({
         <div>
           <p className="type-body-s font-semibold">Instant booking</p>
           <p className="type-caption text-muted">
-            {paymentsEnabled
-              ? 'Customers book and pay without waiting for you.'
-              : 'Takes effect once payments go live. Until then you approve each request.'}
+            {!instantAllowed
+              ? 'Not available for this category. You approve each request yourself.'
+              : paymentsEnabled
+                ? 'Customers book and pay without waiting for you.'
+                : 'Takes effect once payments go live. Until then you approve each request.'}
           </p>
         </div>
         <Switch
           name="instant"
           label="Instant booking"
-          defaultChecked={service?.instantBooking}
+          defaultChecked={instantAllowed && service?.instantBooking}
+          disabled={!instantAllowed}
         />
       </div>
       <Feedback state={state} />
@@ -441,9 +598,11 @@ export function ServiceItem({
 }
 
 export function AddServiceCard({
+  groups,
   commissionPercent,
   paymentsEnabled,
 }: {
+  groups?: ServiceGroup[];
   commissionPercent: number;
   paymentsEnabled: boolean;
 }) {
@@ -459,6 +618,7 @@ export function AddServiceCard({
     <div className="bg-page shadow-card mt-6 max-w-[620px] rounded-xl p-6">
       <h3 className="type-h4 mb-4">New service</h3>
       <ServiceForm
+        groups={groups}
         commissionPercent={commissionPercent}
         paymentsEnabled={paymentsEnabled}
         onDone={() => setOpen(false)}

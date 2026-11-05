@@ -28,9 +28,18 @@ export type Verification = {
 
 export type Blockers = { provider: string[]; admin: string[] };
 
+export type DocumentKind =
+  | 'id'
+  | 'business'
+  | 'certification'
+  | 'reference'
+  | 'screening'
+  | 'safeguarding'
+  | 'qualification';
+
 export type ProviderDocument = {
   id: string;
-  kind: 'id' | 'business' | 'certification';
+  kind: DocumentKind;
   label: string;
   path: string;
   created_at: string;
@@ -99,10 +108,61 @@ export const DOC_KINDS = {
   id: 'ID document',
   certification: 'Trade certificate or registration',
   business: 'Business registration (optional)',
-} as const;
+  reference: 'References',
+  screening: 'Background screening',
+  safeguarding: 'Safeguarding documents',
+  qualification: 'Qualification',
+} as const satisfies Record<DocumentKind, string>;
 
-/** Plumbers and electricians must show a trade certificate. */
-export const NEEDS_CERTIFICATE = ['plumbing', 'electrical'];
+export type CategoryRequirements = {
+  /** Some category of the provider needs a trade certificate or licence. */
+  licence: boolean;
+  /** Some category needs a business registration, which is otherwise optional. */
+  business: boolean;
+  /** Extra documents the provider's categories ask for, set by admins in the database. */
+  documents: { key: string; label: string; kind: DocumentKind }[];
+};
+
+/** What the provider's categories require on top of the basics. Read from the database. */
+export async function loadCategoryRequirements(
+  slug: string,
+): Promise<CategoryRequirements> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('provider_categories')
+    .select(
+      'category:service_categories(requires_licence, requires_business_registration, requirements)',
+    )
+    .eq('provider_slug', slug)
+    .returns<
+      {
+        category: {
+          requires_licence: boolean;
+          requires_business_registration: boolean;
+          requirements: {
+            key: string;
+            label: string;
+            kind: DocumentKind;
+            required?: boolean;
+          }[];
+        } | null;
+      }[]
+    >();
+  const result: CategoryRequirements = { licence: false, business: false, documents: [] };
+  const seen = new Set<string>();
+  for (const row of data ?? []) {
+    const c = row.category;
+    if (!c) continue;
+    result.licence ||= c.requires_licence;
+    result.business ||= c.requires_business_registration;
+    for (const r of c.requirements) {
+      if (r.kind === 'id' || r.required === false || seen.has(r.key)) continue;
+      seen.add(r.key);
+      result.documents.push({ key: r.key, label: r.label, kind: r.kind });
+    }
+  }
+  return result;
+}
 
 export const EVENT_LABEL: Record<string, string> = {
   submitted: 'Submitted for review',
