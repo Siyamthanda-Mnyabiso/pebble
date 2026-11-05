@@ -511,11 +511,7 @@ function TimeSelect({
 export function HoursForm({ hours }: { hours: Record<number, string[]> }) {
   const [state, action, pending] = useActionState(saveHours, initial);
   return (
-    <form
-      key={JSON.stringify(hours)}
-      action={action}
-      className="mt-6 max-w-[760px]"
-    >
+    <form key={JSON.stringify(hours)} action={action} className="mt-6 max-w-[760px]">
       <ul className="bg-page shadow-card divide-line divide-y rounded-xl px-4 sm:px-6">
         {ORDER.map((weekday) => {
           const d = describeTimes(hours[weekday] ?? []);

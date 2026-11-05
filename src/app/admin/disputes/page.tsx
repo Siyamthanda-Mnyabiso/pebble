@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { PageHeading } from '@/components/account/ui';
 import { Empty, Pill } from '@/components/admin/parts';
 import { DisputeDecision } from '@/components/admin/dispute-decision';
-import { DECISION_LABEL, REASON_LABEL } from '@/components/booking/dispute-panels';
+import { DECISION_LABEL, REASON_LABEL } from '@/lib/dispute-labels';
 import { requireAdmin } from '@/lib/admin';
 import { cn } from '@/lib/cn';
 import { formatDay } from '@/lib/dates';

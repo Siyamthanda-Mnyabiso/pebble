@@ -82,7 +82,10 @@ async function Earnings() {
           { label: 'Gross revenue', value: formatRand(Number(sum.gross_cents ?? 0)) },
           {
             label: `Pebble commission (${terms.commissionPercent}%)`,
-            value: `-${formatRand(Number(sum.commission_cents ?? 0))}`,
+            value:
+              Number(sum.commission_cents ?? 0) > 0
+                ? `-${formatRand(Number(sum.commission_cents))}`
+                : formatRand(0),
           },
           { label: 'Net earnings', value: formatRand(Number(sum.net_cents ?? 0)) },
           { label: 'Completed jobs', value: String(sum.completed_jobs ?? 0) },

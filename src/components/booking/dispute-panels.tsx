@@ -9,6 +9,7 @@ import {
   uploadEvidence,
 } from '@/components/booking/evidence';
 import { Button } from '@/components/ui/button';
+import { REASON_LABEL, DECISION_LABEL } from '@/lib/dispute-labels';
 
 export type DisputeView = {
   id: string;
@@ -20,19 +21,6 @@ export type DisputeView = {
   decision_note: string | null;
   refund_cents: number | null;
   created_at: string;
-};
-
-export const REASON_LABEL: Record<string, string> = {
-  not_done: 'The job was not done',
-  poor_quality: 'The work was poor',
-  no_show: 'Nobody came',
-  other: 'Something else',
-};
-
-export const DECISION_LABEL: Record<NonNullable<DisputeView['decision']>, string> = {
-  release_payout: 'The provider is paid',
-  refund_customer: 'Refund to the customer',
-  split: 'Part refund',
 };
 
 /** The customer confirms a finished job, or reports a problem and holds the payment. */
