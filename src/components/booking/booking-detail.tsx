@@ -51,7 +51,7 @@ const STATUS_NOTE: Partial<Record<BookingStatus, string>> = {
   pending: 'Waiting for the provider to accept this booking.',
   awaiting_payment: 'Accepted. This booking is confirmed once it is paid.',
   awaiting_confirmation:
-    'The provider marked this job finished. The customer confirms it, or reports a problem.',
+    'The provider marked this job finished. It is completed once the customer confirms it, or when the confirmation window ends, unless a problem is reported.',
   declined: 'The provider could not take this booking.',
   expired: 'This request ran out of time before it was accepted.',
 };

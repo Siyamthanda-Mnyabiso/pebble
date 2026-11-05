@@ -168,6 +168,15 @@ async function Row({
             actions={[{ label: 'Cancel', move: 'cancel', danger: true }]}
           />
         ) : null}
+        {booking.status === 'awaiting_confirmation' || booking.status === 'disputed' ? (
+          <ButtonLink
+            href={`/account/bookings/${booking.id}`}
+            variant={booking.status === 'awaiting_confirmation' ? 'primary' : 'secondary'}
+            size="sm"
+          >
+            {booking.status === 'awaiting_confirmation' ? 'Confirm or report' : 'View'}
+          </ButtonLink>
+        ) : null}
         {past && booking.status === 'completed' ? (
           reviewed ? null : (
             <ButtonLink href="/account/reviews" variant="secondary" size="sm">
